@@ -1,6 +1,5 @@
 ﻿using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.UI.Gameplay;
-using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Features.Interactables
 {
