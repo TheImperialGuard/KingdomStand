@@ -107,7 +107,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles
                     entity = _entitiesFactory.CreateBallisticProjectile(position, direction, owner, config.PrefabPath);
 
                     entity.AddAreaEffectRadius(new(cannonProjectileConfig.DamageAreaRadius));
-                    entity.AddSystem(new DealAreaDamageOnDeathSystem(_container.Resolve<AreaEntitiesDetectorService>()));
+                    entity.AddSystem(new DealAreaDamageOnDeathSystem(_container.Resolve<AreaEntitiesDetectorService>(), type));
 
                     break;
 

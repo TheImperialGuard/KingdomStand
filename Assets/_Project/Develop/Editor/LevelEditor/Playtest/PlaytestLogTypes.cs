@@ -8,7 +8,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
 {
     // Лог прогона плейтеста — JSON в Logs/Playtests. Стейджи — с настоящими номерами уровня, время — игровые секунды
     // от запуска прогона (пауза их не считает). Враги (вышло, убито, прорвалось, урон, золото за убийства) числятся
-    // за стейджем своей волны; золото, здоровье и башни — за временем стейджа: от его начала до начала следующего,
+    // за стейджем своей волны, призванные — за волной призвавшего; золото, здоровье, башни и выстрелы пушек — за временем
+    // стейджа: от его начала до начала следующего,
     // у первого стейджа прогона — вместе с подготовкой. levelSnapshot — срез уровня на момент запуска, как в
     // Docs/Balance, с несохранёнными правками.
     //
@@ -27,6 +28,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         public int StartGold { get; set; }
         public int StartPlayerHealth { get; set; }
         public bool HasUnsavedChanges { get; set; }
+
+        // Игрой управлял Claude кодом — не настоящая игра; пишется только true
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool Automated { get; set; }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public WeatherKinds? ForcedWeather { get; set; }
@@ -73,6 +78,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public PlaytestLightningLog Lightning { get; set; }
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public PlaytestCannonLog Cannon { get; set; }
+
         public PlaytestGoldLog Gold { get; set; } = new();
         public PlaytestHealthLog Health { get; set; } = new();
         public PlaytestTowersLog Towers { get; set; } = new();
@@ -86,6 +94,24 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         public int Strikes { get; set; }
         public int HitEnemies { get; set; }
         public float Damage { get; set; }
+    }
+
+    // Выстрелы пушек за время стейджа: взрыв ядра — выстрел, попадание — ядро задело хотя бы одного живого наземного
+    // врага, enemiesHit — сколько врагов задето всего. Осколки «Осколочных снарядов» — так же, своими полями.
+    public class PlaytestCannonLog
+    {
+        public int Shots { get; set; }
+        public int Hits { get; set; }
+        public int EnemiesHit { get; set; }
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public int Fragments { get; set; }
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public int FragmentHits { get; set; }
+
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public int FragmentEnemiesHit { get; set; }
     }
 
     // atEnd = atStart + kills + skip + sales − towerPurchases − abilityPurchases + other; other — то, что прошло мимо
@@ -140,15 +166,24 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
 
     // Враг — имя ассета CharacterConfig, как в срезах. maxHealth — здоровье одного врага сразу после спавна, у
     // бесконечного уровня — уже с множителем его волны.
+    // Призванные — отдельной строкой: summonedBy — ассет призвавшего, числятся за его стейджем и волной. casts — сколько
+    // раз враги этой строки призывали, по всем врагам строки вместе.
     public class PlaytestEnemyLog
     {
         public string Enemy { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string SummonedBy { get; set; }
+
         public float MaxHealth { get; set; }
         public int Spawned { get; set; }
         public int Killed { get; set; }
         public int Leaked { get; set; }
         public int Damage { get; set; }
         public int KillGold { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? Casts { get; set; }
     }
 
     public class PlaytestWaveLog

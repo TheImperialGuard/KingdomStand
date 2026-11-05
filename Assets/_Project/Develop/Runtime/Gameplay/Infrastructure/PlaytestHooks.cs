@@ -5,6 +5,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Weather;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 
@@ -56,6 +57,12 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
 
         public static void NotifyEnemySpawned(Entity enemy, CharacterConfig enemyConfig, EnemiesWaveConfig wave)
             => _session?.OnEnemySpawned(enemy, enemyConfig, wave);
+
+        public static void NotifyEnemySummoned(Entity summoned, CharacterConfig summonedConfig, Entity summoner)
+            => _session?.OnEnemySummoned(summoned, summonedConfig, summoner);
+
+        public static void NotifyAreaProjectileExploded(ProjectilesTypes projectileType, int hitEnemiesCount)
+            => _session?.OnAreaProjectileExploded(projectileType, hitEnemiesCount);
 
         public static void NotifyTowerBought(TowerTypes towerType, int level, int cost)
             => _session?.OnTowerBought(towerType, level, cost);

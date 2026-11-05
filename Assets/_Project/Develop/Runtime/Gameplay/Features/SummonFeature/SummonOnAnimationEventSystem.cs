@@ -6,6 +6,9 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.Enemies;
 using Assets._Project.Develop.Runtime.Gameplay.Features.LevelNavigation;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
 using UnityEngine;
+#if UNITY_EDITOR
+using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
+#endif
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Features.SummonFeature
 {
@@ -18,6 +21,10 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.SummonFeature
         private readonly EnemiesFactory _enemiesFactory;
 
         private SummonAnimationEventReceiver _receiver;
+
+        #if UNITY_EDITOR
+            private Entity _summoner;
+        #endif
 
         private ReactiveVariable<bool> _isDead;
         private ReactiveVariable<bool> _isPathFinished;
@@ -40,6 +47,10 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.SummonFeature
         public void OnInit(Entity entity)
         {
             _receiver = entity.SummonAnimationEventReceiver;
+
+            #if UNITY_EDITOR
+                _summoner = entity;
+            #endif
 
             _isDead = entity.IsDead;
             _isPathFinished = entity.IsPathFinished;
@@ -107,7 +118,11 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.SummonFeature
 
             Vector3 lookDirection = Vector3.ProjectOnPlane(GetLanePoint(path[0], waypointsOffset) - cell.Position, Vector3.up);
 
-            _enemiesFactory.Create(cell.Position, _summonedConfig, path, waypointsOffset, lookDirection);
+            Entity summoned = _enemiesFactory.Create(cell.Position, _summonedConfig, path, waypointsOffset, lookDirection);
+
+            #if UNITY_EDITOR
+                PlaytestHooks.NotifyEnemySummoned(summoned, _summonedConfig, _summoner);
+            #endif
         }
     }
 }

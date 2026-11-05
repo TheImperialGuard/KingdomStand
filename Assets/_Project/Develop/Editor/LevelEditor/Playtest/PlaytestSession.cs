@@ -8,6 +8,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.Weather;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Player;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
 using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
@@ -79,6 +80,12 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
 
         public void OnEnemySpawned(Entity enemy, CharacterConfig enemyConfig, EnemiesWaveConfig wave)
             => _log?.OnEnemySpawned(enemy, enemyConfig, wave);
+
+        public void OnEnemySummoned(Entity summoned, CharacterConfig summonedConfig, Entity summoner)
+            => _log?.OnEnemySummoned(summoned, summonedConfig, summoner);
+
+        public void OnAreaProjectileExploded(ProjectilesTypes projectileType, int hitEnemiesCount)
+            => _log?.OnAreaProjectileExploded(projectileType, hitEnemiesCount);
 
         public void OnTowerBought(TowerTypes towerType, int level, int cost) => _log?.OnTowerBought(towerType, level, cost);
 

@@ -11,6 +11,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         private const string LEVEL_GUID_KEY = KEY_PREFIX + "LevelGuid";
         private const string START_STAGE_KEY = KEY_PREFIX + "StartStage";
         private const string START_GOLD_KEY = KEY_PREFIX + "StartGold";
+        private const string AUTOMATED_KEY = KEY_PREFIX + "Automated";
 
         private const int NO_START_GOLD = -1;
 
@@ -23,6 +24,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             SessionState.SetString(LEVEL_GUID_KEY, guid);
             SessionState.SetInt(START_STAGE_KEY, launch.StartStageIndex);
             SessionState.SetInt(START_GOLD_KEY, launch.StartGold ?? NO_START_GOLD);
+            SessionState.SetBool(AUTOMATED_KEY, launch.IsAutomated);
         }
 
         public static bool TryRead(out PlaytestLaunch launch)
@@ -38,8 +40,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             int startStageIndex = SessionState.GetInt(START_STAGE_KEY, 0);
             int savedGold = SessionState.GetInt(START_GOLD_KEY, NO_START_GOLD);
             int? startGold = savedGold == NO_START_GOLD ? (int?)null : savedGold;
+            bool isAutomated = SessionState.GetBool(AUTOMATED_KEY, false);
 
-            launch = new PlaytestLaunch(level, startStageIndex, startGold);
+            launch = new PlaytestLaunch(level, startStageIndex, startGold, isAutomated);
 
             return true;
         }
@@ -49,6 +52,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             SessionState.EraseString(LEVEL_GUID_KEY);
             SessionState.EraseInt(START_STAGE_KEY);
             SessionState.EraseInt(START_GOLD_KEY);
+            SessionState.EraseBool(AUTOMATED_KEY);
         }
     }
 }

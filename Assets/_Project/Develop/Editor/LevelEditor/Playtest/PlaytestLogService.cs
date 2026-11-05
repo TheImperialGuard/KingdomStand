@@ -15,6 +15,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.Enemies;
 using Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode;
 using Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Player;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
@@ -39,6 +40,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         private const int UNKNOWN_WAVE_NUMBER = 0;
         private const int NO_DAMAGE = 0;
         private const int ENDLESS_SNAPSHOT_WAVES_COUNT = 0;
+        private const string NOT_SUMMONED = null;
+        private const string UNKNOWN_SUMMONER_NAME = "?";
 
         private readonly StageProviderService _stageProvider;
         private readonly IStagesSource _stagesSource;
@@ -130,6 +133,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
                 StartGold = Gold,
                 StartPlayerHealth = _playerHealth.Current.Value,
                 HasUnsavedChanges = HasUnsavedChanges(),
+                Automated = _launch.IsAutomated,
                 ForcedWeather = _launch.IsEndless ? EndlessModeEditorSettings.ForcedWeather : null,
                 Result = PlaytestResult.InProgress,
                 LevelSnapshot = CreateLevelSnapshot(),
@@ -164,17 +168,62 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             WaveAddress address = FindWaveAddress(wave);
             PlaytestStageLog stage = GetOrCreateStage(address.StageNumber);
 
-            TrackedEnemy tracked = new(
-                GetOrCreateEnemyLog(stage, enemyConfig.name),
-                GetOrCreateWaveLog(stage, address.WaveNumber));
+            Track(enemy, stage, GetOrCreateEnemyLog(stage, enemyConfig.name, NOT_SUMMONED), GetOrCreateWaveLog(stage, address.WaveNumber));
+        }
 
-            // Множитель здоровья бесконечного режима враг получает раньше, по событию спавна
-            tracked.Enemy.MaxHealth = enemy.MaxHealth.Value;
-            tracked.Enemy.Spawned++;
-            tracked.Wave.Spawned++;
-            tracked.DeathSubscription = enemy.IsDead.Subscribe((_, isDead) => OnEnemyDeathChanged(enemy, tracked, isDead));
+        // Призванный числится за стейджем и волной призвавшего; призвавший не из лога — за идущим стейджем без волны.
+        // Каст — все призванные одного кадра от одного призвавшего.
+        public void OnEnemySummoned(Entity summoned, CharacterConfig summonedConfig, Entity summoner)
+        {
+            if (IsAfterEnd)
+                return;
 
-            _enemies[enemy] = tracked;
+            if (_enemies.TryGetValue(summoner, out TrackedEnemy summonerTracked) == false)
+            {
+                PlaytestStageLog currentStage = _currentStage;
+                PlaytestEnemyLog unknownSummonerLog = GetOrCreateEnemyLog(currentStage, summonedConfig.name, UNKNOWN_SUMMONER_NAME);
+
+                Track(summoned, currentStage, unknownSummonerLog, GetOrCreateWaveLog(currentStage, UNKNOWN_WAVE_NUMBER));
+                return;
+            }
+
+            if (summonerTracked.LastSummonFrame != Time.frameCount)
+            {
+                summonerTracked.LastSummonFrame = Time.frameCount;
+                summonerTracked.Enemy.Casts = (summonerTracked.Enemy.Casts ?? 0) + 1;
+            }
+
+            PlaytestStageLog stage = summonerTracked.Stage;
+            PlaytestEnemyLog summonedLog = GetOrCreateEnemyLog(stage, summonedConfig.name, summonerTracked.Enemy.Enemy);
+
+            Track(summoned, stage, summonedLog, summonerTracked.Wave);
+        }
+
+        // Выстрел числится за временем стейджа, как золото: ядро могло вылететь ещё в прошлом стейдже.
+        public void OnAreaProjectileExploded(ProjectilesTypes projectileType, int hitEnemiesCount)
+        {
+            if (IsAfterEnd)
+                return;
+
+            PlaytestCannonLog cannon = _currentStage.Cannon ??= new PlaytestCannonLog();
+            bool isHit = hitEnemiesCount > 0;
+
+            if (projectileType == ProjectilesTypes.CannonballFragment)
+            {
+                cannon.Fragments++;
+                cannon.FragmentEnemiesHit += hitEnemiesCount;
+
+                if (isHit)
+                    cannon.FragmentHits++;
+
+                return;
+            }
+
+            cannon.Shots++;
+            cannon.EnemiesHit += hitEnemiesCount;
+
+            if (isHit)
+                cannon.Hits++;
         }
 
         public void OnTowerBought(TowerTypes towerType, int level, int cost)
@@ -472,17 +521,31 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             return _stagesSource.Get(runStageNumber) as EnemiesWavesStageConfig;
         }
 
-        private static PlaytestEnemyLog GetOrCreateEnemyLog(PlaytestStageLog stage, string enemyName)
+        // summonedBy — ассет призвавшего; NOT_SUMMONED — враг из волны
+        private static PlaytestEnemyLog GetOrCreateEnemyLog(PlaytestStageLog stage, string enemyName, string summonedBy)
         {
-            PlaytestEnemyLog enemyLog = stage.Enemies.Find(log => log.Enemy == enemyName);
+            PlaytestEnemyLog enemyLog = stage.Enemies.Find(log => log.Enemy == enemyName && log.SummonedBy == summonedBy);
 
             if (enemyLog != null)
                 return enemyLog;
 
-            enemyLog = new PlaytestEnemyLog { Enemy = enemyName };
+            enemyLog = new PlaytestEnemyLog { Enemy = enemyName, SummonedBy = summonedBy };
             stage.Enemies.Add(enemyLog);
 
             return enemyLog;
+        }
+
+        private void Track(Entity enemy, PlaytestStageLog stage, PlaytestEnemyLog enemyLog, PlaytestWaveLog waveLog)
+        {
+            TrackedEnemy tracked = new(stage, enemyLog, waveLog);
+
+            // Множитель здоровья бесконечного режима враг получает раньше, по событию спавна
+            tracked.Enemy.MaxHealth = enemy.MaxHealth.Value;
+            tracked.Enemy.Spawned++;
+            tracked.Wave.Spawned++;
+            tracked.DeathSubscription = enemy.IsDead.Subscribe((_, isDead) => OnEnemyDeathChanged(enemy, tracked, isDead));
+
+            _enemies[enemy] = tracked;
         }
 
         // Волны держатся по порядку номеров, хотя выходят в порядке своего старта.
@@ -623,15 +686,20 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
 
         private class TrackedEnemy
         {
-            public TrackedEnemy(PlaytestEnemyLog enemy, PlaytestWaveLog wave)
+            public TrackedEnemy(PlaytestStageLog stage, PlaytestEnemyLog enemy, PlaytestWaveLog wave)
             {
+                Stage = stage;
                 Enemy = enemy;
                 Wave = wave;
             }
 
+            public PlaytestStageLog Stage { get; }
             public PlaytestEnemyLog Enemy { get; }
             public PlaytestWaveLog Wave { get; }
             public IDisposable DeathSubscription { get; set; }
+
+            // Кадр последнего призыва этого врага: все призванные одного каста приходят в одном кадре
+            public int? LastSummonFrame { get; set; }
         }
 
         private readonly struct WaveAddress

@@ -5,21 +5,24 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
 {
     // Что запустить в плейтесте: уровень, стейдж, с которого начать, и золото на старте
     // (null — стартовое золото уровня, как в игре). У бесконечного уровня своих стейджей нет: стартовый индекс — это
-    // волна режима с нуля.
+    // волна режима с нуля. isAutomated — игрой будет управлять Claude кодом: логи таких прогонов помечены и в сводку
+    // не идут.
     public class PlaytestLaunch
     {
         private const int FirstWaveNumber = 1;
 
-        public PlaytestLaunch(LevelConfig level, int startStageIndex, int? startGold)
+        public PlaytestLaunch(LevelConfig level, int startStageIndex, int? startGold, bool isAutomated = false)
         {
             Level = level;
             StartStageIndex = startStageIndex;
             StartGold = startGold;
+            IsAutomated = isAutomated;
         }
 
         public LevelConfig Level { get; }
         public int StartStageIndex { get; }
         public int? StartGold { get; }
+        public bool IsAutomated { get; }
 
         public bool IsEndless => Level.GameMode == GameModes.Infinity;
 

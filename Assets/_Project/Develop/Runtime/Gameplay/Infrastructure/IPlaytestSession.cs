@@ -5,6 +5,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Weather;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 
@@ -29,6 +30,13 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
         void OnGameEnded(LevelResults results);
 
         void OnEnemySpawned(Entity enemy, CharacterConfig enemyConfig, EnemiesWaveConfig wave);
+
+        // Враг, поднятый способностью другого врага, — например, скелет некроманта. Все враги одного каста приходят
+        // в одном кадре.
+        void OnEnemySummoned(Entity summoned, CharacterConfig summonedConfig, Entity summoner);
+
+        // Снаряд с уроном по площади взорвался: тип снаряда и сколько живых врагов задел.
+        void OnAreaProjectileExploded(ProjectilesTypes projectileType, int hitEnemiesCount);
 
         void OnTowerBought(TowerTypes towerType, int level, int cost);
 
