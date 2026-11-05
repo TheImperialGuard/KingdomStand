@@ -31,6 +31,11 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
         private const string WAYPOINT_NUMBERS_TEXT = "Номера вейпоинтов";
         private const string WAYPOINT_NUMBERS_TOOLTIP = "Номер вейпоинта в списке RoadPath, с нуля";
 
+        private const string TOWER_SLOT_NUMBERS_TEXT = "Номера мест под башни";
+        private const string TOWER_SLOT_NUMBERS_TOOLTIP =
+            "Номер места — позиция в списке мест под башни у Level, с единицы. Под этими номерами места стоят в покрытии "
+            + "дорог в срезе уровня";
+
         private readonly List<Toggle> _partToggles = new();
 
         bool ITransientOverlay.visible => StageRoads.Get().Count > 0;
@@ -48,6 +53,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
                 value => RoadsSceneSettings.AreLabelsShown = value));
             root.Add(CreatePartToggle(WAYPOINT_NUMBERS_TEXT, WAYPOINT_NUMBERS_TOOLTIP, RoadsSceneSettings.AreWaypointNumbersShown,
                 value => RoadsSceneSettings.AreWaypointNumbersShown = value));
+            root.Add(CreatePartToggle(TOWER_SLOT_NUMBERS_TEXT, TOWER_SLOT_NUMBERS_TOOLTIP, RoadsSceneSettings.AreTowerSlotNumbersShown,
+                value => RoadsSceneSettings.AreTowerSlotNumbersShown = value));
 
             RefreshPartsEnabled();
 

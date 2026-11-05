@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 namespace Assets._Project.Develop.Editor.LevelEditor.Roads
 {
     // Рисует дороги в Scene View: центр дороги со стрелками по ходу врагов, полосы Л и П — ровно по маршрутам врагов,
-    // спавн с подписью дороги и длинами полос, базу. Работает там, где есть дороги: в Prefab Mode префаба уровня
+    // спавн с подписью дороги и длинами полос, базу, номера мест под башни. Работает там, где есть дороги: в Prefab Mode префаба уровня
     // и в Play Mode. Подчиняется кнопке Gizmos в Scene View и галочкам панели «Дороги уровня».
     [InitializeOnLoad]
     public static class RoadsSceneDrawer
@@ -38,6 +38,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
 
         private const int LABEL_FONT_SIZE = 11;
         private const int WAYPOINT_NUMBER_FONT_SIZE = 10;
+        private const int TOWER_SLOT_NUMBER_FONT_SIZE = 12;
         private const int TEXT_PADDING_X = 3;
         private const int TEXT_PADDING_Y = 1;
         private const float HALF = 0.5f;
@@ -217,12 +218,16 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
         {
             bool areLabelsShown = RoadsSceneSettings.AreLabelsShown;
             bool areWaypointNumbersShown = RoadsSceneSettings.AreWaypointNumbersShown;
+            bool areTowerSlotNumbersShown = RoadsSceneSettings.AreTowerSlotNumbersShown;
 
-            if (areLabelsShown == false && areWaypointNumbersShown == false)
+            if (areLabelsShown == false && areWaypointNumbersShown == false && areTowerSlotNumbersShown == false)
                 return;
 
             EnsureTextStyle();
             Handles.BeginGUI();
+
+            if (areTowerSlotNumbersShown)
+                DrawTowerSlotNumbers();
 
             for (int i = 0; i < _shapes.Count; i++)
             {
@@ -302,6 +307,22 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
             }
         }
 
+        // Номер места — с единицы, как в покрытии дорог в срезе (LevelPrefabReader.FIRST_TOWER_SLOT_NUMBER).
+        private static void DrawTowerSlotNumbers()
+        {
+            IReadOnlyList<Transform> slots = StageRoads.GetTowerSlots();
+
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (slots[i] == null || TryGetGuiPoint(slots[i].position, out Vector2 point) == false)
+                    continue;
+
+                string number = (i + LevelPrefabReader.FIRST_TOWER_SLOT_NUMBER).ToString();
+
+                DrawLabel(point, number, TextAnchor.MiddleCenter, TOWER_SLOT_NUMBER_FONT_SIZE, FontStyle.Bold, RoadPalette.TowerSlotBackground);
+            }
+        }
+
         // «First · Path_1» и длины полос: «Ц 43 · Л 42.3 · П 43.7» — тем же расчётом, что в срезах.
         private static string DescribeRoad(RoadPath road)
         {
@@ -321,6 +342,15 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
         }
 
         private static void DrawLabel(Vector2 point, string text, TextAnchor anchor, int fontSize, FontStyle fontStyle)
+            => DrawLabel(point, text, anchor, fontSize, fontStyle, RoadPalette.LabelBackground);
+
+        private static void DrawLabel(
+            Vector2 point,
+            string text,
+            TextAnchor anchor,
+            int fontSize,
+            FontStyle fontStyle,
+            Color background)
         {
             _content.text = text;
             _textStyle.fontSize = fontSize;
@@ -329,7 +359,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
 
             Rect rect = PlaceRect(point, _textStyle.CalcSize(_content), anchor);
 
-            EditorGUI.DrawRect(rect, RoadPalette.LabelBackground);
+            EditorGUI.DrawRect(rect, background);
             GUI.Label(rect, _content, _textStyle);
         }
 
@@ -403,14 +433,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
                 IReadOnlyList<Waypoint> waypoints = road.Waypoints;
 
                 foreach (PathLane lane in lanes)
-                {
-                    Vector3[] points = new Vector3[waypoints.Count];
-
-                    for (int i = 0; i < waypoints.Count; i++)
-                        points[i] = RoadLanes.GetPoint(waypoints[i], lane);
-
-                    _lanePoints[lane] = points;
-                }
+                    _lanePoints[lane] = RoadLanes.GetPoints(waypoints, lane);
 
                 Vector3[] center = Center;
 

@@ -17,6 +17,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
 
         public static Color Outline { get; } = new(0f, 0f, 0f, 0.75f);
         public static Color LabelBackground { get; } = new(0f, 0f, 0f, 0.65f);
+
+        // Номера мест под башни — на тёплой подложке, чтобы не путать их с номерами вейпоинтов.
+        public static Color TowerSlotBackground { get; } = new(0.45f, 0.25f, 0.05f, 0.85f);
         public static Color Text { get; } = Color.white;
         public static Color TextShadow { get; } = new(0f, 0f, 0f, 0.9f);
         public static Color Base { get; } = new(1f, 1f, 1f, 0.9f);

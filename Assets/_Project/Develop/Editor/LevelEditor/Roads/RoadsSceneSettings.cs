@@ -10,11 +10,13 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
         private const string LANES_KEY = PREFS_PREFIX + "LanesShown";
         private const string LABELS_KEY = PREFS_PREFIX + "LabelsShown";
         private const string WAYPOINT_NUMBERS_KEY = PREFS_PREFIX + "WaypointNumbersShown";
+        private const string TOWER_SLOT_NUMBERS_KEY = PREFS_PREFIX + "TowerSlotNumbersShown";
 
         private static bool _areRoadsShown = EditorPrefs.GetBool(ROADS_KEY, true);
         private static bool _areLanesShown = EditorPrefs.GetBool(LANES_KEY, true);
         private static bool _areLabelsShown = EditorPrefs.GetBool(LABELS_KEY, true);
         private static bool _areWaypointNumbersShown = EditorPrefs.GetBool(WAYPOINT_NUMBERS_KEY, false);
+        private static bool _areTowerSlotNumbersShown = EditorPrefs.GetBool(TOWER_SLOT_NUMBERS_KEY, true);
 
         // Главный переключатель: без него не рисуется ничего.
         public static bool AreRoadsShown
@@ -54,6 +56,16 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Roads
             {
                 _areWaypointNumbersShown = value;
                 Save(WAYPOINT_NUMBERS_KEY, value);
+            }
+        }
+
+        public static bool AreTowerSlotNumbersShown
+        {
+            get => _areTowerSlotNumbersShown;
+            set
+            {
+                _areTowerSlotNumbersShown = value;
+                Save(TOWER_SLOT_NUMBERS_KEY, value);
             }
         }
 
