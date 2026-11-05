@@ -10,6 +10,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore
 {
     public class EntitiesHelper
     {
+        // Один удар снимает с босса не больше 1/N его максимального здоровья, где N — это значение
+        public const float BossMaxHealthDividerPerHit = 4;
+
         public static bool TryTakeDamageFrom(Entity source, Entity target, float damage)
         {
             if (IsSameTeam(source, target))
@@ -84,7 +87,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore
 
         private static float GetDamageForBoss(float damage, Entity target)
         {
-            float maxDamageForApply = target.MaxHealth.Value / 3;
+            float maxDamageForApply = target.MaxHealth.Value / BossMaxHealthDividerPerHit;
 
             if (damage > maxDamageForApply)
                 return maxDamageForApply;

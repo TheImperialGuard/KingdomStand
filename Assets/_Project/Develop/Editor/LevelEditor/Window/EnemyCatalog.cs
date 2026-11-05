@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
+using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
 using UnityEditor;
 using UnityEngine;
@@ -102,7 +103,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Window
             text.Append($"Золото за убийство {meleeEnemy.GoldOnDeath} · урон по базе {meleeEnemy.DamageOnFinishPath}");
 
             if (meleeEnemy.IsBoss)
-                text.Append("\nБосс: за один удар теряет не больше трети HP");
+            {
+                string bossHitDivider = LevelEditorTexts.Number(EntitiesHelper.BossMaxHealthDividerPerHit);
+                text.Append($"\nБосс: за один удар теряет не больше 1/{bossHitDivider} HP");
+            }
 
             return text.ToString();
         }
