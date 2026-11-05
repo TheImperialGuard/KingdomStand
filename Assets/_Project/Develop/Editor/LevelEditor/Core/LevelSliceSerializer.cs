@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Assets._Project.Develop.Runtime.Configs.Gameplay;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Abilities;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Abilities.Enemies;
@@ -21,8 +22,8 @@ using Newtonsoft.Json.Serialization;
 
 namespace Assets._Project.Develop.Editor.LevelEditor
 {
-    // Формат срезов: ключи в camelCase, enum строками, числа с точкой и не больше трёх знаков после неё,
-    // переводы строк CRLF, как в .editorconfig. При разборе неизвестный ключ — ошибка: опечатка не должна
+    // Формат срезов: ключи в camelCase, enum строками, числа с точкой и не больше трёх знаков после неё, массивы чисел —
+    // одной строкой, переводы строк CRLF, как в .editorconfig. При разборе неизвестный ключ — ошибка: опечатка не должна
     // молча превращаться в значение по умолчанию.
     public static class LevelSliceSerializer
     {
@@ -35,8 +36,18 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         // Эффективность башни — урон в секунду на столько золота полной цены.
         private const float EFFICIENCY_GOLD_AMOUNT = 100f;
 
+        private const string NUMBERS_SEPARATOR = ", ";
+
         private static readonly JsonSerializerSettings _settings = CreateSettings();
         private static readonly JsonSerializer _serializer = JsonSerializer.Create(_settings);
+
+        // Массив чисел и null, разбитый отступами на строки: массивы покрытия по дальностям в столбик растянули бы срез,
+        // поэтому такие массивы пишутся одной строкой. Внутри строки JSON перевода строки нет — текст заметок не задет.
+        private static readonly Regex _multilineNumbersArray = new(
+            @"\[\s*\r?\n\s*(?:(?:-?\d+(?:\.\d+)?|null)\s*,\s*)*(?:-?\d+(?:\.\d+)?|null)\s*\]",
+            RegexOptions.Compiled);
+
+        private static readonly Regex _arrayItem = new(@"-?\d+(?:\.\d+)?|null", RegexOptions.Compiled);
 
         public static LevelSlice CreateSlice(
             LevelConfig config,
@@ -61,6 +72,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             slice.PrefabPath = config.PrefabPath;
             slice.GameMode = config.GameMode.ToString();
             slice.TowerSlotsCount = prefab.Status == LevelPrefabStatus.Found ? prefab.TowerSlotsCount : null;
+            slice.CoverageRanges = stats.CoverageRanges.Count > 0 ? stats.CoverageRanges : null;
             slice.Roads = JToken.FromObject(stats.Roads, _serializer);
             slice.Analysis = JToken.FromObject(stats, _serializer);
 
@@ -141,7 +153,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
 
             builder.Append(LINE_BREAK);
 
-            return builder.ToString();
+            return _multilineNumbersArray.Replace(builder.ToString(), JoinNumbersArray);
         }
 
         // Срезы стейджа и волны с блоком analysis — для буфера обмена окна редактора.
@@ -207,6 +219,13 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                     new RoundingJsonConverter(LevelSliceNumbers.DECIMALS),
                 },
             };
+        }
+
+        private static string JoinNumbersArray(Match array)
+        {
+            IEnumerable<string> items = _arrayItem.Matches(array.Value).Select(item => item.Value);
+
+            return $"[{string.Join(NUMBERS_SEPARATOR, items)}]";
         }
 
         private static void AttachStageAnalysis(StageSlice stageSlice, StageStats stageStats)

@@ -37,6 +37,24 @@ namespace Assets._Project.Develop.Editor.LevelEditor
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<WaveAbilityStats> Abilities { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public List<EnemyUnderFireStats> UnderFire { get; set; }
+    }
+
+    // Сколько секунд босс волны идёт под огнём каждого места, которое достаёт до полосы волны; массив — по дальностям
+    // LevelStats.CoverageRanges. Ход по покрытым отрезкам плюс остановки на каст внутри них; заморозка и оглушение
+    // не входят.
+    public class EnemyUnderFireStats
+    {
+        public string Enemy { get; set; }
+        public List<SlotUnderFireStats> Slots { get; set; } = new();
+    }
+
+    public class SlotUnderFireStats
+    {
+        public int Slot { get; set; }
+        public List<float> Seconds { get; set; } = new();
     }
 
     // Касты врагов одного типа в волне — оценка без убийств: каждый кастует, пока не дойдёт до базы.
@@ -44,6 +62,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor
     // и CastDistanceStep пути, от FirstCast до LastCast — каст k: FirstCast + (k − 1) × шаг. У остальных кастующих
     // расписание сдвинуто на разницу выходов (CasterSpawns).
     // Призванные — сколько скелетов и HP выйдет на волну, если все кастующие дойдут до базы: верхняя граница.
+    // Касты до зоны башен — сколько кастов один кастующий начнёт, пока полоса волны ещё не под огнём; массив —
+    // по дальностям LevelStats.CoverageRanges.
     public class WaveAbilityStats
     {
         public string Enemy { get; set; }
@@ -60,6 +80,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public AbilityCastStats LastCast { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public List<int> CastsBeforeTowers { get; set; }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public int? SummonedToBase { get; set; }
@@ -133,6 +156,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public int? PeakEnemies { get; set; }
         public List<RoadTrafficStats> Traffic { get; set; } = new();
 
+        // Дальности башен по возрастанию — по ним идут все массивы покрытия; в срезе — coverageRanges.
+        [JsonIgnore]
+        public List<float> CoverageRanges { get; set; } = new();
+
         [JsonIgnore]
         public List<StageStats> Stages { get; set; } = new();
 
@@ -151,6 +178,26 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public float? LengthLeft { get; set; }
         public float? LengthRight { get; set; }
         public SortedDictionary<string, float> TimeToBase { get; set; } = new(StringComparer.Ordinal);
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public RoadCoverageStats Coverage { get; set; }
+    }
+
+    // Покрытие центра дороги местами под башни; массивы — по дальностям LevelStats.CoverageRanges.
+    // FirstCovered — с какого расстояния от спавна дорога впервые под огнём, null — ни одно место не достаёт.
+    // TotalLength — сумма покрытия по местам. Места — только те, что достают хотя бы на одной дальности; номер —
+    // с единицы.
+    public class RoadCoverageStats
+    {
+        public List<float?> FirstCovered { get; set; } = new();
+        public List<float> TotalLength { get; set; } = new();
+        public List<SlotCoverageStats> Slots { get; set; } = new();
+    }
+
+    public class SlotCoverageStats
+    {
+        public int Slot { get; set; }
+        public List<float> Length { get; set; } = new();
     }
 
     // Сколько волн, врагов и здоровья идёт по одной полосе одной дороги.

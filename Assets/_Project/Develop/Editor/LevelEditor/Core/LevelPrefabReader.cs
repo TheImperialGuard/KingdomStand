@@ -13,6 +13,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor
     {
         public const int MIN_WAYPOINTS_COUNT = 2;
 
+        // Места под башни нумеруются с единицы — так о них удобнее говорить.
+        public const int FIRST_TOWER_SLOT_NUMBER = 1;
+
         public static LevelPrefabInfo Read(LevelConfig config)
         {
             LevelPrefabInfo info = new();
@@ -65,12 +68,22 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             if (level.TowersPositions == null)
                 return;
 
-            foreach (Transform towerPosition in level.TowersPositions)
+            for (int i = 0; i < level.TowersPositions.Count; i++)
             {
+                Transform towerPosition = level.TowersPositions[i];
+
                 if (towerPosition == null)
+                {
                     info.MissingTowerSlotsCount++;
-                else
-                    info.TowerSlotsCount++;
+                    continue;
+                }
+
+                info.TowerSlotsCount++;
+                info.TowerSlots.Add(new LevelTowerSlot
+                {
+                    Number = i + FIRST_TOWER_SLOT_NUMBER,
+                    Position = towerPosition.position,
+                });
             }
         }
 
@@ -101,7 +114,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 return road;
 
             foreach (PathLane lane in Enum.GetValues(typeof(PathLane)))
+            {
                 road.Lengths[lane] = RoadLanes.CalculateLength(waypoints, lane);
+                road.LanePoints[lane] = RoadLanes.GetPoints(waypoints, lane);
+            }
 
             return road;
         }

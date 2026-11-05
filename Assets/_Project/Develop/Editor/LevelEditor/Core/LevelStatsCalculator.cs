@@ -16,6 +16,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
     // сопротивление урону — EntitiesHelper, золото за скип — EarnGoldOnSkipStageService.
     // Время в пути и пик врагов на поле — оценки без убийств: каждый враг доходит до базы, кастующие останавливаются
     // на каждый каст (EnemyAbilitiesFactory). Призванные в пик и здоровье не входят — для них верхняя граница призывов.
+    // Покрытие дорог местами под башни — RoadCoverageCalculator; по нему же касты до зоны башен и время боссов под огнём.
     public static class LevelStatsCalculator
     {
         private const int FirstCastNumber = 1;
@@ -37,13 +38,14 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         {
             LevelStats levelStats = new();
             List<List<EnemySpawn>> stagesSpawns = new();
+            LevelCoverage coverage = new(prefab, RoadCoverageCalculator.CollectTowerRanges());
 
             for (int i = 0; i < stages.Count; i++)
             {
                 bool isLastStage = hasLastStage && i == stages.Count - 1;
                 List<EnemySpawn> stageSpawns = new();
 
-                levelStats.Stages.Add(CalculateStage(stages[i], isLastStage, config, prefab, gameConfig, stageSpawns));
+                levelStats.Stages.Add(CalculateStage(stages[i], isLastStage, config, prefab, coverage, gameConfig, stageSpawns));
                 stagesSpawns.Add(stageSpawns);
             }
 
@@ -51,7 +53,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             CalculateDurations(stages, levelStats);
             CalculatePeaks(stages, stagesSpawns, levelStats);
 
-            levelStats.Roads = CalculateRoads(stages, prefab);
+            levelStats.CoverageRanges = coverage.Ranges.ToList();
+            levelStats.Roads = CalculateRoads(stages, prefab, coverage);
 
             return levelStats;
         }
@@ -158,6 +161,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             bool isLastStage,
             LevelConfig config,
             LevelPrefabInfo prefab,
+            LevelCoverage coverage,
             GameConfig gameConfig,
             List<EnemySpawn> stageSpawns)
         {
@@ -166,9 +170,12 @@ namespace Assets._Project.Develop.Editor.LevelEditor
 
             foreach (EnemiesWaveConfig wave in GetWaves(stage))
             {
-                float? length = GetLength(FindRoad(prefab, wave.PathNumber), wave.Lane);
+                LevelRoad road = FindRoad(prefab, wave.PathNumber);
+                float? length = GetLength(road, wave.Lane);
+                coverage.TryGet(road, wave.Lane, out LaneCoverage laneCoverage);
+
                 List<EnemySpawn> waveSpawns = CollectSpawns(wave, length);
-                WaveStats waveStats = CalculateWave(wave, waveSpawns, length);
+                WaveStats waveStats = CalculateWave(wave, waveSpawns, length, laneCoverage);
 
                 stageStats.Waves.Add(waveStats);
                 stageSpawns.AddRange(waveSpawns);
@@ -205,10 +212,16 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             return stageStats;
         }
 
-        private static WaveStats CalculateWave(EnemiesWaveConfig wave, IReadOnlyList<EnemySpawn> spawns, float? length)
+        // Покрытие полосы волны — null, если его нет: тогда нет ни кастов до зоны башен, ни времени боссов под огнём.
+        private static WaveStats CalculateWave(
+            EnemiesWaveConfig wave,
+            IReadOnlyList<EnemySpawn> spawns,
+            float? length,
+            LaneCoverage laneCoverage)
         {
             float flyingHealth = SumStat(wave, enemy => enemy.IsFlying ? enemy.MaxHealth : 0f);
-            List<WaveAbilityStats> abilities = CalculateAbilities(wave, length);
+            List<WaveAbilityStats> abilities = CalculateAbilities(wave, length, laneCoverage);
+            List<EnemyUnderFireStats> underFire = CalculateUnderFire(wave, length, laneCoverage);
 
             return new WaveStats
             {
@@ -221,6 +234,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 LastArrival = CalculateLastArrival(spawns),
                 FlyingHealth = flyingHealth > 0f ? flyingHealth : null,
                 Abilities = abilities.Count > 0 ? abilities : null,
+                UnderFire = underFire.Count > 0 ? underFire : null,
             };
         }
 
@@ -282,8 +296,12 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         private static float CalculateCastStartTime(MeleeConfig enemy, int castNumber)
             => castNumber * enemy.Ability.Cooldown + (castNumber - 1) * enemy.Ability.Duration;
 
+        // Путь от начала дороги, на котором враг встанет на каст.
+        private static float CalculateCastDistance(MeleeConfig enemy, int castNumber)
+            => CalculateWalkTimeBeforeCast(enemy, castNumber) * enemy.MoveSpeed;
+
         // Касты по типам кастующих врагов волны, в порядке первого выхода. Без длины дороги касты не оценить.
-        private static List<WaveAbilityStats> CalculateAbilities(EnemiesWaveConfig wave, float? length)
+        private static List<WaveAbilityStats> CalculateAbilities(EnemiesWaveConfig wave, float? length, LaneCoverage laneCoverage)
         {
             List<WaveAbilityStats> abilities = new();
             Dictionary<MeleeConfig, WaveAbilityStats> abilitiesByEnemy = new();
@@ -295,7 +313,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
 
                 if (abilitiesByEnemy.TryGetValue(enemy, out WaveAbilityStats abilityStats) == false)
                 {
-                    abilityStats = CreateAbilityStats(enemy, spawn.Time, walkTime);
+                    abilityStats = CreateAbilityStats(enemy, spawn.Time, walkTime, laneCoverage);
                     abilitiesByEnemy.Add(enemy, abilityStats);
                     abilities.Add(abilityStats);
                 }
@@ -310,7 +328,11 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             return abilities;
         }
 
-        private static WaveAbilityStats CreateAbilityStats(MeleeConfig enemy, float firstSpawnTime, float walkTime)
+        private static WaveAbilityStats CreateAbilityStats(
+            MeleeConfig enemy,
+            float firstSpawnTime,
+            float walkTime,
+            LaneCoverage laneCoverage)
         {
             int castsCount = CountCastsToBase(enemy, walkTime);
 
@@ -330,7 +352,84 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 abilityStats.LastCast = CreateCastStats(enemy, firstSpawnTime, castsCount);
             }
 
+            if (laneCoverage != null)
+                abilityStats.CastsBeforeTowers = CountCastsBeforeTowers(enemy, castsCount, laneCoverage);
+
             return abilityStats;
+        }
+
+        // Касты, начатые до первой точки полосы под огнём, — по каждой дальности. Если полосу не покрывает ни одно
+        // место, все касты до базы — до зоны башен.
+        private static List<int> CountCastsBeforeTowers(MeleeConfig enemy, int castsToBase, LaneCoverage laneCoverage)
+        {
+            List<int> castsBeforeTowers = new();
+
+            for (int i = 0; i < laneCoverage.Ranges.Count; i++)
+            {
+                float? firstCovered = laneCoverage.GetFirstCovered(i);
+                int castsCount = 0;
+
+                while (castsCount < castsToBase && IsBeforeCoverage(CalculateCastDistance(enemy, castsCount + 1), firstCovered))
+                    castsCount++;
+
+                castsBeforeTowers.Add(castsCount);
+            }
+
+            return castsBeforeTowers;
+        }
+
+        private static bool IsBeforeCoverage(float distance, float? firstCovered)
+            => firstCovered.HasValue == false || distance < firstCovered.Value;
+
+        // Время под огнём — только у боссов: по нему подбирается их здоровье (справочник кампании, раздел 5).
+        private static List<EnemyUnderFireStats> CalculateUnderFire(EnemiesWaveConfig wave, float? length, LaneCoverage laneCoverage)
+        {
+            List<EnemyUnderFireStats> underFire = new();
+
+            if (laneCoverage == null)
+                return underFire;
+
+            HashSet<MeleeConfig> countedBosses = new();
+
+            foreach (WaveEnemyGroup group in GetGroups(wave))
+            {
+                if (TryGetWalkTime(group.EnemyConfig, length, out MeleeConfig enemy, out float walkTime) == false)
+                    continue;
+
+                if (enemy.IsBoss && countedBosses.Add(enemy))
+                    underFire.Add(CreateUnderFireStats(enemy, walkTime, laneCoverage));
+            }
+
+            return underFire;
+        }
+
+        // Ход по покрытым отрезкам места плюс каст на каждой остановке внутри них: стоящего на касте бьют.
+        private static EnemyUnderFireStats CreateUnderFireStats(MeleeConfig enemy, float walkTime, LaneCoverage laneCoverage)
+        {
+            int castsCount = CountCastsToBase(enemy, walkTime);
+            float castDuration = castsCount > 0 ? enemy.Ability.Duration : 0f;
+            List<float> castDistances = new();
+
+            for (int castNumber = FirstCastNumber; castNumber <= castsCount; castNumber++)
+                castDistances.Add(CalculateCastDistance(enemy, castNumber));
+
+            EnemyUnderFireStats underFireStats = new() { Enemy = enemy.name };
+
+            foreach (SlotCoverage slot in laneCoverage.Slots)
+            {
+                SlotUnderFireStats slotStats = new() { Slot = slot.Slot };
+
+                for (int i = 0; i < laneCoverage.Ranges.Count; i++)
+                {
+                    int castsInZone = castDistances.Count(distance => slot.Contains(i, distance));
+
+                    slotStats.Seconds.Add(slot.GetLength(i) / enemy.MoveSpeed + castsInZone * castDuration);
+                }
+
+                underFireStats.Slots.Add(slotStats);
+            }
+
+            return underFireStats;
         }
 
         private static AbilityCastStats CreateCastStats(MeleeConfig enemy, float spawnTime, int castNumber)
@@ -338,7 +437,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             return new AbilityCastStats
             {
                 Time = spawnTime + CalculateCastStartTime(enemy, castNumber),
-                Distance = CalculateWalkTimeBeforeCast(enemy, castNumber) * enemy.MoveSpeed,
+                Distance = CalculateCastDistance(enemy, castNumber),
             };
         }
 
@@ -588,7 +687,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         private static int CountOnField(IReadOnlyList<EnemySpawn> spawns, float time)
             => spawns.Count(spawn => spawn.SpawnTime <= time && spawn.ArrivalTime > time);
 
-        private static List<RoadStats> CalculateRoads(IReadOnlyList<EnemiesWavesStageConfig> stages, LevelPrefabInfo prefab)
+        private static List<RoadStats> CalculateRoads(
+            IReadOnlyList<EnemiesWavesStageConfig> stages,
+            LevelPrefabInfo prefab,
+            LevelCoverage coverage)
         {
             List<RoadStats> roadsStats = new();
 
@@ -607,10 +709,36 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 if (roadStats.LengthCenter.HasValue)
                     AddTimesToBase(stages, roadStats);
 
+                if (coverage.TryGet(road, PathLane.Center, out LaneCoverage laneCoverage))
+                    roadStats.Coverage = CreateRoadCoverageStats(laneCoverage);
+
                 roadsStats.Add(roadStats);
             }
 
             return roadsStats;
+        }
+
+        private static RoadCoverageStats CreateRoadCoverageStats(LaneCoverage laneCoverage)
+        {
+            RoadCoverageStats coverageStats = new();
+
+            for (int i = 0; i < laneCoverage.Ranges.Count; i++)
+            {
+                coverageStats.FirstCovered.Add(laneCoverage.GetFirstCovered(i));
+                coverageStats.TotalLength.Add(laneCoverage.GetTotalLength(i));
+            }
+
+            foreach (SlotCoverage slot in laneCoverage.Slots)
+            {
+                SlotCoverageStats slotStats = new() { Slot = slot.Slot };
+
+                for (int i = 0; i < laneCoverage.Ranges.Count; i++)
+                    slotStats.Length.Add(slot.GetLength(i));
+
+                coverageStats.Slots.Add(slotStats);
+            }
+
+            return coverageStats;
         }
 
         private static void AddTimesToBase(IReadOnlyList<EnemiesWavesStageConfig> stages, RoadStats roadStats)

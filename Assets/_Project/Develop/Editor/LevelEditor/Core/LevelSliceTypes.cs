@@ -6,8 +6,8 @@ using Newtonsoft.Json.Linq;
 namespace Assets._Project.Develop.Editor.LevelEditor
 {
     // Срез уровня — JSON в Docs/Balance/Levels. Импортируются только startGold, startPlayerHealth и stages
-    // (данные стейджей и волн); campaignNumber, prefabPath, gameMode, towerSlotsCount, roads, analysis, errors
-    // и warnings — справочные блоки, при импорте их содержимое пропускается.
+    // (данные стейджей и волн); campaignNumber, prefabPath, gameMode, towerSlotsCount, coverageRanges, roads, analysis,
+    // errors и warnings — справочные блоки, при импорте их содержимое пропускается.
     //
     // Срез бесконечного уровня (EndlessSliceSerializer) — тот же формат и ещё два блока: endless — настройки режима, их
     // импортирует EndlessSliceImporter вместо stages, и справочный weather. Его stages — первые волны, собранные
@@ -21,6 +21,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public string PrefabPath { get; set; }
         public string GameMode { get; set; }
         public int? TowerSlotsCount { get; set; }
+
+        // Дальности башен по возрастанию — по ним идут массивы покрытия дорог и анализа волн.
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public List<float> CoverageRanges { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public int StartGold { get; set; }

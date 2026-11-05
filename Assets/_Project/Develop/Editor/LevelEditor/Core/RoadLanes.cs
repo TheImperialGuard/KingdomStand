@@ -31,6 +31,16 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             return waypointTransform.position + waypointTransform.TransformVector(PathLaneOffsets.ToLocalOffset(lane));
         }
 
+        public static Vector3[] GetPoints(IReadOnlyList<Waypoint> waypoints, PathLane lane)
+        {
+            Vector3[] points = new Vector3[waypoints.Count];
+
+            for (int i = 0; i < waypoints.Count; i++)
+                points[i] = GetPoint(waypoints[i], lane);
+
+            return points;
+        }
+
         public static float CalculateLength(IReadOnlyList<Waypoint> waypoints, PathLane lane)
         {
             float length = 0f;
