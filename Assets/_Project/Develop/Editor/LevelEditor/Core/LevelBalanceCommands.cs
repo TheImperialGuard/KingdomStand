@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Assets._Project.Develop.Editor.EndlessMode;
+using Assets._Project.Develop.Editor.LevelEditor.Playtest;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Gameplay.GameMode;
 using UnityEditor;
@@ -49,6 +50,17 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public static string PreviewImport(string levelName, string jsonPath) => RunImport(levelName, jsonPath, isApplying: false);
 
         public static string Import(string levelName, string jsonPath) => RunImport(levelName, jsonPath, isApplying: true);
+
+        // Сводка логов плейтеста уровня; includeOldVersions — вместе с прогонами прошлых версий уровня
+        public static string SummarizePlaytests(string levelName, bool includeOldVersions = false)
+        {
+            LevelConfig level = LevelEditorAssets.FindLevelConfig(levelName);
+
+            if (level == null)
+                return $"Уровень {levelName} не найден.";
+
+            return PlaytestLogSummary.Create(level, includeOldVersions);
+        }
 
         [MenuItem(VALIDATE_MENU)]
         private static void ValidateAllFromMenu() => LogValidationReport();
