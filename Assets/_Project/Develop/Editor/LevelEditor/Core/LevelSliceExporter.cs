@@ -48,7 +48,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 gameConfig,
                 LevelEditorAssets.FindEnemyConfigs(),
                 LevelEditorAssets.FindTowerConfigs(),
-                LevelEditorAssets.FindTowersList());
+                LevelEditorAssets.FindTowersList(),
+                LevelEditorAssets.FindTowersAbilitiesList(),
+                LevelEditorAssets.FindProjectilesList());
 
             WriteIfChanged(REFERENCE_FILE, LevelSliceSerializer.ToJson(reference), changes);
             DeleteStaleSlices(sliceFileNames, changes);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Assets._Project.Develop.Runtime.Configs.Gameplay;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Projectiles;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
@@ -64,6 +65,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public static GameConfig FindGameConfig() => FindAll<GameConfig>().FirstOrDefault();
 
         public static TowersListConfig FindTowersList() => FindAll<TowersListConfig>().FirstOrDefault();
+
+        public static TowersAbilitiesListConfig FindTowersAbilitiesList() => FindAll<TowersAbilitiesListConfig>().FirstOrDefault();
+
+        public static ProjectilesListConfig FindProjectilesList() => FindAll<ProjectilesListConfig>().FirstOrDefault();
 
         public static List<CharacterConfig> FindEnemyConfigs()
             => FindAll<CharacterConfig>().OrderBy(enemy => enemy.name, StringComparer.Ordinal).ToList();

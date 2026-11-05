@@ -20,7 +20,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor
     }
 
     // Статистика волны. Времена — в секундах от начала стейджа.
-    // Приход на базу — оценка без убийств, null — время в пути неизвестно.
+    // Приход на базу — оценка без убийств с остановками на каст, null — время в пути неизвестно.
+    // Здоровье летающих — часть Health, которую не снимают пушки; пишется, только если летающие есть.
     public class WaveStats
     {
         public int EnemiesCount { get; set; }
@@ -30,6 +31,48 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public float SpawnEnd { get; set; }
         public float? FirstArrival { get; set; }
         public float? LastArrival { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public float? FlyingHealth { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public List<WaveAbilityStats> Abilities { get; set; }
+    }
+
+    // Касты врагов одного типа в волне — оценка без убийств: каждый кастует, пока не дойдёт до базы.
+    // CastsToBase и CastDelay — на одного кастующего. Расписание первого из них: касты идут через CastInterval секунд
+    // и CastDistanceStep пути, от FirstCast до LastCast — каст k: FirstCast + (k − 1) × шаг. У остальных кастующих
+    // расписание сдвинуто на разницу выходов (CasterSpawns).
+    // Призванные — сколько скелетов и HP выйдет на волну, если все кастующие дойдут до базы: верхняя граница.
+    public class WaveAbilityStats
+    {
+        public string Enemy { get; set; }
+        public EnemyAbilityTypes Ability { get; set; }
+        public int CastersCount { get; set; }
+        public List<float> CasterSpawns { get; set; } = new();
+        public int CastsToBase { get; set; }
+        public float CastDelay { get; set; }
+        public float CastInterval { get; set; }
+        public float CastDistanceStep { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public AbilityCastStats FirstCast { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public AbilityCastStats LastCast { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? SummonedToBase { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public float? SummonedHealthToBase { get; set; }
+    }
+
+    // Начало каста: время от начала стейджа и путь от начала дороги.
+    public class AbilityCastStats
+    {
+        public float Time { get; set; }
+        public float Distance { get; set; }
     }
 
     // Статистика стейджа. Золото к началу стейджа считается так, будто враги прошлых стейджей убиты.
@@ -53,6 +96,17 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public float SpawnOverflow { get; set; }
         public float? LastArrival { get; set; }
         public int? PeakEnemies { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public float? FlyingHealth { get; set; }
+
+        // Пик врагов и Health — без призванных; это верхняя граница призывов, если призывающие дойдут до базы.
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? SummonedToBase { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public float? SummonedHealthToBase { get; set; }
+
         public List<RoadTrafficStats> Traffic { get; set; } = new();
 
         [JsonIgnore]
@@ -86,7 +140,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public List<RoadStats> Roads { get; set; } = new();
     }
 
-    // Дорога префаба: длины по полосам и время до базы по центру дороги для врагов, которые по ней идут.
+    // Дорога префаба: длины по полосам и время до базы по центру дороги для врагов, которые по ней идут,
+    // с подъёмом после появления и остановками на каст.
     public class RoadStats
     {
         public PathNumber PathNumber { get; set; }

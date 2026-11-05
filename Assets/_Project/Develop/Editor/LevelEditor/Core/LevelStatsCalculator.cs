@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Assets._Project.Develop.Runtime.Configs.Gameplay;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Abilities.Enemies;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Stages;
 using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
@@ -12,9 +14,12 @@ namespace Assets._Project.Develop.Editor.LevelEditor
 {
     // Статистика уровня по LevelConfig и дорогам префаба. Формулы повторяют рантайм: порядок спавна — WavesSpawner,
     // сопротивление урону — EntitiesHelper, золото за скип — EarnGoldOnSkipStageService.
-    // Время в пути и пик врагов на поле — оценки без убийств: каждый враг доходит до базы.
+    // Время в пути и пик врагов на поле — оценки без убийств: каждый враг доходит до базы, кастующие останавливаются
+    // на каждый каст (EnemyAbilitiesFactory). Призванные в пик и здоровье не входят — для них верхняя граница призывов.
     public static class LevelStatsCalculator
     {
+        private const int FirstCastNumber = 1;
+
         private static readonly IReadOnlyList<EnemiesWaveConfig> _noWaves = Array.Empty<EnemiesWaveConfig>();
         private static readonly IReadOnlyList<WaveEnemyGroup> _noGroups = Array.Empty<WaveEnemyGroup>();
 
@@ -127,6 +132,21 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             }
         }
 
+        // Как TowersFactory: пушка выбирает цели селектором наземных врагов, остальные башни бьют и летающих.
+        public static bool CanHitFlying(TowerTypes towerType) => towerType != TowerTypes.Cannon;
+
+        // Как EnemyAbilitiesFactory.AddAbilityTo: вид способности задаёт класс конфига.
+        public static EnemyAbilityTypes GetAbilityType(EnemyAbilityConfig ability)
+        {
+            return ability switch
+            {
+                SummonAbilityConfig => EnemyAbilityTypes.Summon,
+                WarCryAbilityConfig => EnemyAbilityTypes.WarCry,
+                SnowballThrowAbilityConfig => EnemyAbilityTypes.SnowballThrow,
+                _ => throw new ArgumentException($"Not supported {ability.GetType()} enemy ability config"),
+            };
+        }
+
         public static IReadOnlyList<EnemiesWaveConfig> GetWaves(EnemiesWavesStageConfig stage)
             => stage.EnemiesWaveConfigs ?? _noWaves;
 
@@ -146,8 +166,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor
 
             foreach (EnemiesWaveConfig wave in GetWaves(stage))
             {
-                List<EnemySpawn> waveSpawns = CollectSpawns(wave, FindRoad(prefab, wave.PathNumber));
-                WaveStats waveStats = CalculateWave(wave, waveSpawns);
+                float? length = GetLength(FindRoad(prefab, wave.PathNumber), wave.Lane);
+                List<EnemySpawn> waveSpawns = CollectSpawns(wave, length);
+                WaveStats waveStats = CalculateWave(wave, waveSpawns, length);
 
                 stageStats.Waves.Add(waveStats);
                 stageSpawns.AddRange(waveSpawns);
@@ -160,6 +181,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 stageStats.KillGold += waveStats.KillGold;
                 stageStats.BreakthroughDamage += waveStats.BreakthroughDamage;
                 stageStats.SpawnEnd = Math.Max(stageStats.SpawnEnd, waveStats.SpawnEnd);
+                stageStats.FlyingHealth = AddOptional(stageStats.FlyingHealth, waveStats.FlyingHealth);
+                AddSummoned(waveStats, stageStats);
 
                 wavesTraffic.Add(new RoadTrafficStats
                 {
@@ -182,8 +205,11 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             return stageStats;
         }
 
-        private static WaveStats CalculateWave(EnemiesWaveConfig wave, IReadOnlyList<EnemySpawn> spawns)
+        private static WaveStats CalculateWave(EnemiesWaveConfig wave, IReadOnlyList<EnemySpawn> spawns, float? length)
         {
+            float flyingHealth = SumStat(wave, enemy => enemy.IsFlying ? enemy.MaxHealth : 0f);
+            List<WaveAbilityStats> abilities = CalculateAbilities(wave, length);
+
             return new WaveStats
             {
                 EnemiesCount = spawns.Count,
@@ -193,25 +219,157 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 SpawnEnd = CalculateLastSpawnTime(wave),
                 FirstArrival = CalculateFirstArrival(spawns),
                 LastArrival = CalculateLastArrival(spawns),
+                FlyingHealth = flyingHealth > 0f ? flyingHealth : null,
+                Abilities = abilities.Count > 0 ? abilities : null,
             };
         }
 
-        private static List<EnemySpawn> CollectSpawns(EnemiesWaveConfig wave, LevelRoad road)
+        private static List<EnemySpawn> CollectSpawns(EnemiesWaveConfig wave, float? length)
         {
-            float? length = GetLength(road, wave.Lane);
-
             return EnumerateSpawns(wave)
                 .Select(spawn => new EnemySpawn(spawn.Time, CalculateTravelTime(spawn.Enemy, length)))
                 .ToList();
         }
 
+        // Подъём после появления, ход по дороге и остановки на каст: враг стоит, пока кастует.
         private static float? CalculateTravelTime(CharacterConfig enemyConfig, float? length)
         {
-            if (TryGetMelee(enemyConfig, out MeleeConfig enemy) == false || length.HasValue == false || enemy.MoveSpeed <= 0f)
+            if (TryGetWalkTime(enemyConfig, length, out MeleeConfig enemy, out float walkTime) == false)
                 return null;
 
-            return length.Value / enemy.MoveSpeed;
+            return enemy.SpawnProcessTime + walkTime + CalculateCastDelay(enemy, walkTime);
         }
+
+        private static bool TryGetWalkTime(CharacterConfig enemyConfig, float? length, out MeleeConfig enemy, out float walkTime)
+        {
+            walkTime = 0f;
+
+            if (TryGetMelee(enemyConfig, out enemy) == false || length.HasValue == false || enemy.MoveSpeed <= 0f)
+                return false;
+
+            walkTime = length.Value / enemy.MoveSpeed;
+
+            return true;
+        }
+
+        private static float CalculateCastDelay(MeleeConfig enemy, float walkTime)
+        {
+            int castsCount = CountCastsToBase(enemy, walkTime);
+
+            return castsCount > 0 ? castsCount * enemy.Ability.Duration : 0f;
+        }
+
+        // Касты, которые враг начнёт, пока идёт до базы. Без перезарядки цикл каста не оценить — считаем, что кастов нет.
+        private static int CountCastsToBase(MeleeConfig enemy, float walkTime)
+        {
+            if (enemy.Ability == null || enemy.Ability.Cooldown <= 0f)
+                return 0;
+
+            int castsCount = 0;
+
+            while (CalculateWalkTimeBeforeCast(enemy, castsCount + 1) < walkTime)
+                castsCount++;
+
+            return castsCount;
+        }
+
+        // Как EnemyAbilitiesFactory.AddCastCycleTo: перезарядка тикает с появления и после каждого каста, поэтому каст
+        // с номером castNumber (с единицы) начинается через castNumber × перезарядка + (castNumber − 1) × каст после
+        // появления. Из этого времени враг стоял на подъёме и на прошлых кастах, остальное — шёл.
+        private static float CalculateWalkTimeBeforeCast(MeleeConfig enemy, int castNumber)
+            => Math.Max(0f, castNumber * enemy.Ability.Cooldown - enemy.SpawnProcessTime);
+
+        private static float CalculateCastStartTime(MeleeConfig enemy, int castNumber)
+            => castNumber * enemy.Ability.Cooldown + (castNumber - 1) * enemy.Ability.Duration;
+
+        // Касты по типам кастующих врагов волны, в порядке первого выхода. Без длины дороги касты не оценить.
+        private static List<WaveAbilityStats> CalculateAbilities(EnemiesWaveConfig wave, float? length)
+        {
+            List<WaveAbilityStats> abilities = new();
+            Dictionary<MeleeConfig, WaveAbilityStats> abilitiesByEnemy = new();
+
+            foreach (WaveSpawn spawn in EnumerateSpawns(wave))
+            {
+                if (TryGetWalkTime(spawn.Enemy, length, out MeleeConfig enemy, out float walkTime) == false || enemy.Ability == null)
+                    continue;
+
+                if (abilitiesByEnemy.TryGetValue(enemy, out WaveAbilityStats abilityStats) == false)
+                {
+                    abilityStats = CreateAbilityStats(enemy, spawn.Time, walkTime);
+                    abilitiesByEnemy.Add(enemy, abilityStats);
+                    abilities.Add(abilityStats);
+                }
+
+                abilityStats.CastersCount++;
+                abilityStats.CasterSpawns.Add(spawn.Time);
+            }
+
+            foreach (KeyValuePair<MeleeConfig, WaveAbilityStats> casterAbility in abilitiesByEnemy)
+                AddSummonedToBase(casterAbility.Value, casterAbility.Key);
+
+            return abilities;
+        }
+
+        private static WaveAbilityStats CreateAbilityStats(MeleeConfig enemy, float firstSpawnTime, float walkTime)
+        {
+            int castsCount = CountCastsToBase(enemy, walkTime);
+
+            WaveAbilityStats abilityStats = new()
+            {
+                Enemy = enemy.name,
+                Ability = GetAbilityType(enemy.Ability),
+                CastsToBase = castsCount,
+                CastDelay = CalculateCastDelay(enemy, walkTime),
+                CastInterval = enemy.Ability.Cooldown + enemy.Ability.Duration,
+                CastDistanceStep = enemy.Ability.Cooldown * enemy.MoveSpeed,
+            };
+
+            if (castsCount > 0)
+            {
+                abilityStats.FirstCast = CreateCastStats(enemy, firstSpawnTime, FirstCastNumber);
+                abilityStats.LastCast = CreateCastStats(enemy, firstSpawnTime, castsCount);
+            }
+
+            return abilityStats;
+        }
+
+        private static AbilityCastStats CreateCastStats(MeleeConfig enemy, float spawnTime, int castNumber)
+        {
+            return new AbilityCastStats
+            {
+                Time = spawnTime + CalculateCastStartTime(enemy, castNumber),
+                Distance = CalculateWalkTimeBeforeCast(enemy, castNumber) * enemy.MoveSpeed,
+            };
+        }
+
+        private static void AddSummonedToBase(WaveAbilityStats abilityStats, MeleeConfig caster)
+        {
+            if (caster.Ability is not SummonAbilityConfig summon || summon.SummonedConfig == null)
+                return;
+
+            int summonedCount = abilityStats.CastersCount * abilityStats.CastsToBase * summon.Count;
+
+            abilityStats.SummonedToBase = summonedCount;
+            abilityStats.SummonedHealthToBase = summonedCount * summon.SummonedConfig.MaxHealth;
+        }
+
+        private static void AddSummoned(WaveStats waveStats, StageStats stageStats)
+        {
+            if (waveStats.Abilities == null)
+                return;
+
+            foreach (WaveAbilityStats abilityStats in waveStats.Abilities)
+            {
+                if (abilityStats.SummonedToBase.HasValue == false)
+                    continue;
+
+                stageStats.SummonedToBase = (stageStats.SummonedToBase ?? 0) + abilityStats.SummonedToBase.Value;
+                stageStats.SummonedHealthToBase = AddOptional(stageStats.SummonedHealthToBase, abilityStats.SummonedHealthToBase);
+            }
+        }
+
+        private static float? AddOptional(float? total, float? value)
+            => value.HasValue ? (total ?? 0f) + value.Value : total;
 
         private static float? CalculateFirstArrival(IReadOnlyList<EnemySpawn> spawns)
         {

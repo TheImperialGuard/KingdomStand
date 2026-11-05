@@ -21,6 +21,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             ("HP", stats => stats.Health),
             ("EHP против физики", stats => stats.EffectiveHealthPhysic),
             ("EHP против магии", stats => stats.EffectiveHealthMagic),
+            ("HP летающих", stats => stats.FlyingHealth),
+            ("HP призванных, если дойдут до базы", stats => stats.SummonedHealthToBase),
             ("HP в секунду", stats => stats.HealthPerSecond),
             ("золото за убийства", stats => stats.KillGold),
             ("максимум золота за скип", stats => stats.MaxSkipGold),

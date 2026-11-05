@@ -5,11 +5,15 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Assets._Project.Develop.Runtime.Configs.Gameplay;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Abilities;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Abilities.Enemies;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Projectiles;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Stages;
 using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -25,6 +29,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         private const string LINE_BREAK = "\r\n";
         private const int MIN_TOWER_LEVEL = 1;
         private const int MAX_TOWER_LEVEL = 5;
+        private const int FirstAbilitySlot = 1;
+        private const int SecondAbilitySlot = 2;
 
         // Эффективность башни — урон в секунду на столько золота полной цены.
         private const float EFFICIENCY_GOLD_AMOUNT = 100f;
@@ -94,7 +100,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             GameConfig gameConfig,
             IReadOnlyList<CharacterConfig> enemies,
             IReadOnlyList<ShootingTowerConfig> towers,
-            TowersListConfig towersList)
+            TowersListConfig towersList,
+            TowersAbilitiesListConfig towersAbilities,
+            ProjectilesListConfig projectiles)
         {
             BalanceReference reference = new();
 
@@ -110,11 +118,13 @@ namespace Assets._Project.Develop.Editor.LevelEditor
             Dictionary<ShootingTowerConfig, TowerUpgradeStep> upgradeSteps = MapUpgradeSteps(towersList);
 
             reference.Towers = towers
-                .Select(tower => CreateTowerReference(tower, upgradeSteps))
+                .Select(tower => CreateTowerReference(tower, upgradeSteps, projectiles))
                 .OrderBy(tower => tower.TowerType)
                 .ThenBy(tower => tower.Level ?? int.MaxValue)
                 .ThenBy(tower => tower.Asset, StringComparer.Ordinal)
                 .ToList();
+
+            reference.TowerAbilities = CreateTowerAbilityReferences(towersAbilities, projectiles);
 
             return reference;
         }
@@ -272,12 +282,194 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 GoldOnDeath = enemy.GoldOnDeath,
                 DamageOnFinishPath = enemy.DamageOnFinishPath,
                 IsBoss = enemy.IsBoss,
+                IsFlying = enemy.IsFlying,
+                Kind = enemy.Kind,
+                Ability = enemy.Ability != null ? CreateEnemyAbilityReference(enemy.Ability) : null,
             };
+        }
+
+        private static EnemyAbilityReference CreateEnemyAbilityReference(EnemyAbilityConfig ability)
+        {
+            EnemyAbilityReference reference = new()
+            {
+                Type = LevelStatsCalculator.GetAbilityType(ability),
+                Asset = ability.name,
+                Name = ability.Name,
+                Cooldown = ability.Cooldown,
+                Duration = ability.Duration,
+            };
+
+            switch (ability)
+            {
+                case SummonAbilityConfig summon:
+                    reference.SummonedEnemy = summon.SummonedConfig != null ? summon.SummonedConfig.name : null;
+                    reference.Count = summon.Count;
+                    break;
+
+                case WarCryAbilityConfig warCry:
+                    reference.Radius = warCry.Radius;
+                    reference.SpeedBoostIndex = warCry.SpeedBoostIndex;
+                    reference.SpeedBoostDuration = warCry.SpeedBoostDuration;
+                    reference.TargetKinds = warCry.TargetKinds.ToList();
+                    break;
+
+                case SnowballThrowAbilityConfig snowballThrow:
+                    reference.ThrowRange = snowballThrow.ThrowRange;
+                    reference.FreezeDuration = snowballThrow.FreezeDuration;
+                    break;
+            }
+
+            return reference;
+        }
+
+        // Слоты способностей — как в окне способностей башни IV уровня: первая группа, затем вторая.
+        private static List<TowerAbilityReference> CreateTowerAbilityReferences(
+            TowersAbilitiesListConfig towersAbilities,
+            ProjectilesListConfig projectiles)
+        {
+            List<TowerAbilityReference> references = new();
+
+            if (towersAbilities == null)
+                return references;
+
+            foreach (TowerTypes towerType in Enum.GetValues(typeof(TowerTypes)))
+            {
+                TowersAbilitiesConfig towerAbilities = FindTowerAbilities(towersAbilities, towerType);
+
+                if (towerAbilities == null)
+                    continue;
+
+                AddTowerAbilityReferences(towerType, FirstAbilitySlot, towerAbilities.FirstAbilityGroup, projectiles, references);
+                AddTowerAbilityReferences(towerType, SecondAbilitySlot, towerAbilities.SecondAbilityGroup, projectiles, references);
+            }
+
+            return references;
+        }
+
+        private static void AddTowerAbilityReferences(
+            TowerTypes towerType,
+            int slot,
+            IReadOnlyList<AbilityConfig> abilities,
+            ProjectilesListConfig projectiles,
+            List<TowerAbilityReference> references)
+        {
+            if (abilities == null)
+                return;
+
+            foreach (AbilityConfig ability in abilities)
+            {
+                if (ability == null)
+                    continue;
+
+                TowerAbilityReference reference = new()
+                {
+                    TowerType = towerType,
+                    Slot = slot,
+                    Asset = ability.name,
+                    Name = ability.Name,
+                };
+
+                int totalCost = 0;
+
+                for (int level = 1; level <= ability.MaxLevel; level++)
+                {
+                    totalCost += ability.GetCostBy(level);
+                    reference.Levels.Add(CreateTowerAbilityLevel(ability, level, totalCost, projectiles));
+                }
+
+                references.Add(reference);
+            }
+        }
+
+        // Числа уровня — те же, что берут системы способностей башни из своего конфига.
+        private static TowerAbilityLevelReference CreateTowerAbilityLevel(
+            AbilityConfig ability,
+            int level,
+            int totalCost,
+            ProjectilesListConfig projectiles)
+        {
+            TowerAbilityLevelReference reference = new()
+            {
+                Level = level,
+                Cost = ability.GetCostBy(level),
+                TotalCost = totalCost,
+            };
+
+            switch (ability)
+            {
+                case AdditionalShootingTargetsAbilityConfig additionalTargets:
+                    reference.AdditionalTargets = additionalTargets.GetAdditionsTargetsBy(level);
+                    break;
+
+                case AdditionalArrowForSingleTargetAbilityConfig additionalArrows:
+                    reference.AdditionalArrows = additionalArrows.GetAdditionsArrowsBy(level);
+                    break;
+
+                case PoisonedAttackAbilityConfig poisonedAttack:
+                    reference.PoisonDamage = poisonedAttack.GetDamageByLevel(level);
+                    reference.PoisonDuration = poisonedAttack.GetEffectTimeByLevel(level);
+                    reference.PoisonInterval = poisonedAttack.GetEffectIntervalByLevel(level);
+                    break;
+
+                case OneShotAttackAbilityConfig oneShotAttack:
+                    reference.Cooldown = oneShotAttack.GetCooldownBy(level);
+                    break;
+
+                case StunAbilityConfig stun:
+                    reference.StunTime = stun.GetStunTimeBy(level);
+                    reference.Radius = stun.Radius;
+                    reference.Cooldown = stun.Cooldown;
+                    break;
+
+                case AttackStunAbilityConfig attackStun:
+                    reference.StunTime = attackStun.GetStunTimeBy(level);
+                    break;
+
+                case ProjectileFragmentsAbilityConfig projectileFragments:
+                    reference.FragmentDamage = projectileFragments.GetFragmentsDamageBy(level);
+                    reference.FragmentsCount = projectileFragments.FragmentsCount;
+                    reference.FragmentAreaRadius = FindDamageAreaRadius(projectiles, ProjectilesTypes.CannonballFragment);
+                    break;
+            }
+
+            return reference;
+        }
+
+        // GetBy бросает исключение, если способностей для типа башни нет.
+        private static TowersAbilitiesConfig FindTowerAbilities(TowersAbilitiesListConfig towersAbilities, TowerTypes towerType)
+        {
+            try
+            {
+                return towersAbilities.GetBy(towerType);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // Радиус урона по площади — у снарядов-ядер; null, если снаряд бьёт одну цель или его конфига нет.
+        private static float? FindDamageAreaRadius(ProjectilesListConfig projectiles, ProjectilesTypes projectileType)
+        {
+            if (projectiles == null)
+                return null;
+
+            try
+            {
+                return projectiles.GetProjectileConfigBy(projectileType) is CannonballProjectileConfig cannonball
+                    ? cannonball.DamageAreaRadius
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static TowerReference CreateTowerReference(
             ShootingTowerConfig tower,
-            IReadOnlyDictionary<ShootingTowerConfig, TowerUpgradeStep> upgradeSteps)
+            IReadOnlyDictionary<ShootingTowerConfig, TowerUpgradeStep> upgradeSteps,
+            ProjectilesListConfig projectiles)
         {
             float damagePerSecond = tower.AttackDamage * tower.AttackPerSecond;
 
@@ -292,6 +484,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 AttackPerSecond = tower.AttackPerSecond,
                 DamagePerSecond = damagePerSecond,
                 AttackRange = tower.AttackRange,
+                HitsFlying = LevelStatsCalculator.CanHitFlying(tower.TowerType),
+                DamageAreaRadius = FindDamageAreaRadius(projectiles, tower.Projectile),
             };
 
             if (upgradeSteps.TryGetValue(tower, out TowerUpgradeStep upgradeStep))
