@@ -150,16 +150,25 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         public int Count { get; set; }
     }
 
+    // slot — номер места под башню, как в срезе и Scene View (с единицы); в логах до 06.11.2026 его нет.
     public class PlaytestTowerDeal
     {
         public TowerTypes Tower { get; set; }
         public int Level { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? Slot { get; set; }
+
         public int Gold { get; set; }
     }
 
     public class PlaytestAbilityPurchase
     {
         public TowerTypes Tower { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? Slot { get; set; }
+
         public string Ability { get; set; }
         public int Gold { get; set; }
     }

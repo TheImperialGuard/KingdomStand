@@ -8,6 +8,7 @@ using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
+using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
 {
@@ -64,14 +65,14 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
         public static void NotifyAreaProjectileExploded(ProjectilesTypes projectileType, int hitEnemiesCount)
             => _session?.OnAreaProjectileExploded(projectileType, hitEnemiesCount);
 
-        public static void NotifyTowerBought(TowerTypes towerType, int level, int cost)
-            => _session?.OnTowerBought(towerType, level, cost);
+        public static void NotifyTowerBought(TowerTypes towerType, int level, int cost, Vector3 position)
+            => _session?.OnTowerBought(towerType, level, cost, position);
 
-        public static void NotifyTowerSold(TowerTypes towerType, int level, int gold)
-            => _session?.OnTowerSold(towerType, level, gold);
+        public static void NotifyTowerSold(TowerTypes towerType, int level, int gold, Vector3 position)
+            => _session?.OnTowerSold(towerType, level, gold, position);
 
-        public static void NotifyAbilityBought(TowerTypes towerType, AbilityConfig ability, int cost)
-            => _session?.OnAbilityBought(towerType, ability, cost);
+        public static void NotifyAbilityBought(TowerTypes towerType, AbilityConfig ability, int cost, Vector3 position)
+            => _session?.OnAbilityBought(towerType, ability, cost, position);
 
         public static void NotifySkipGoldEarned(int gold) => _session?.OnSkipGoldEarned(gold);
 

@@ -6,6 +6,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Weather;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Level;
 using Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Player;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
@@ -15,6 +16,7 @@ using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 using Assets._Project.Develop.Runtime.Utilities.ConfigsManagment;
 using Assets._Project.Develop.Runtime.Utilities.SceneManagment;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -87,12 +89,14 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         public void OnAreaProjectileExploded(ProjectilesTypes projectileType, int hitEnemiesCount)
             => _log?.OnAreaProjectileExploded(projectileType, hitEnemiesCount);
 
-        public void OnTowerBought(TowerTypes towerType, int level, int cost) => _log?.OnTowerBought(towerType, level, cost);
+        public void OnTowerBought(TowerTypes towerType, int level, int cost, Vector3 position)
+            => _log?.OnTowerBought(towerType, level, cost, position);
 
-        public void OnTowerSold(TowerTypes towerType, int level, int gold) => _log?.OnTowerSold(towerType, level, gold);
+        public void OnTowerSold(TowerTypes towerType, int level, int gold, Vector3 position)
+            => _log?.OnTowerSold(towerType, level, gold, position);
 
-        public void OnAbilityBought(TowerTypes towerType, AbilityConfig ability, int cost)
-            => _log?.OnAbilityBought(towerType, ability, cost);
+        public void OnAbilityBought(TowerTypes towerType, AbilityConfig ability, int cost, Vector3 position)
+            => _log?.OnAbilityBought(towerType, ability, cost, position);
 
         public void OnSkipGoldEarned(int gold) => _log?.OnSkipGoldEarned(gold);
 
@@ -123,6 +127,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
                 container.Resolve<WalletService>(),
                 container.Resolve<PlayerHealth>(),
                 container.Resolve<EntitiesLifeContext>(),
+                container.Resolve<Level>(),
                 Launch,
                 _levelCopy,
                 _campaignNumber,

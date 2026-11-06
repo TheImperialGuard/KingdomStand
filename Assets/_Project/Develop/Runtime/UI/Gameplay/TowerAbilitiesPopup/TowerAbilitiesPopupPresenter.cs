@@ -157,7 +157,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
 
             #if UNITY_EDITOR
                 // Покупка способности — в лог плейтеста из редактора уровней
-                PlaytestHooks.NotifyAbilityBought(TowerType, abilityWithInfo.config, abilityCost);
+                PlaytestHooks.NotifyAbilityBought(TowerType, abilityWithInfo.config, abilityCost, Source.Transform.position);
             #endif
 
             ProvideAbility(abilityWithInfo);

@@ -8,6 +8,7 @@ using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
+using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
 {
@@ -38,11 +39,12 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
         // Снаряд с уроном по площади взорвался: тип снаряда и сколько живых врагов задел.
         void OnAreaProjectileExploded(ProjectilesTypes projectileType, int hitEnemiesCount);
 
-        void OnTowerBought(TowerTypes towerType, int level, int cost);
+        // position — где стоит башня: по ней лог узнаёт номер места под башню.
+        void OnTowerBought(TowerTypes towerType, int level, int cost, Vector3 position);
 
-        void OnTowerSold(TowerTypes towerType, int level, int gold);
+        void OnTowerSold(TowerTypes towerType, int level, int gold, Vector3 position);
 
-        void OnAbilityBought(TowerTypes towerType, AbilityConfig ability, int cost);
+        void OnAbilityBought(TowerTypes towerType, AbilityConfig ability, int cost, Vector3 position);
 
         void OnSkipGoldEarned(int gold);
 

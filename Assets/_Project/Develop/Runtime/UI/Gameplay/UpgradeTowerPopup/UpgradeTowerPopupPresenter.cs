@@ -9,6 +9,9 @@ using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
 using Assets._Project.Develop.Runtime.Utilities.Text;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 using System;
+#if UNITY_EDITOR
+using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
+#endif
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
 {
@@ -143,6 +146,11 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
         {
             if (TowersPurchaseService.TryBuyTower(TowerType, NextTowerLevel) == false)
                 return;
+
+            #if UNITY_EDITOR
+                // Покупка уровня с местом башни — в лог плейтеста из редактора уровней
+                PlaytestHooks.NotifyTowerBought(TowerType, NextTowerLevel, NextLevelConfig.Cost, Source.Transform.position);
+            #endif
 
             _towersFactory.Create(Source.Transform.position, NextLevelConfig, NextTowerLevel);
 

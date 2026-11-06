@@ -10,6 +10,9 @@ using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
 using Assets._Project.Develop.Runtime.Utilities.Text;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 using System;
+#if UNITY_EDITOR
+using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
+#endif
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.BuildTowerPopup
 {
@@ -107,6 +110,11 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BuildTowerPopup
                 return;
 
             ShootingTowerConfig config = _towersListConfig.GetBy(type, TowersFirstLevel);
+
+            #if UNITY_EDITOR
+                // Постройка с местом башни — в лог плейтеста из редактора уровней
+                PlaytestHooks.NotifyTowerBought(type, TowersFirstLevel, config.Cost, Source.Transform.position);
+            #endif
 
             ReleaseTowerDemo();
             TowersPlaceholdersService.ReleasePlaceholder(Source);

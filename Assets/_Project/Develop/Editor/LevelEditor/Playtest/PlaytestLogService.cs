@@ -13,6 +13,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.Weather;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Enemies;
 using Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Level;
 using Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Player;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Projectiles;
@@ -42,12 +43,14 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         private const int ENDLESS_SNAPSHOT_WAVES_COUNT = 0;
         private const string NOT_SUMMONED = null;
         private const string UNKNOWN_SUMMONER_NAME = "?";
+        private const float SLOT_MATCH_DISTANCE = 0.1f;
 
         private readonly StageProviderService _stageProvider;
         private readonly IStagesSource _stagesSource;
         private readonly WalletService _wallet;
         private readonly PlayerHealth _playerHealth;
         private readonly EntitiesLifeContext _entitiesLifeContext;
+        private readonly Level _level;
         private readonly PlaytestLaunch _launch;
         private readonly LevelConfig _levelCopy;
         private readonly int? _campaignNumber;
@@ -81,6 +84,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             WalletService wallet,
             PlayerHealth playerHealth,
             EntitiesLifeContext entitiesLifeContext,
+            Level level,
             PlaytestLaunch launch,
             LevelConfig levelCopy,
             int? campaignNumber,
@@ -91,6 +95,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             _wallet = wallet;
             _playerHealth = playerHealth;
             _entitiesLifeContext = entitiesLifeContext;
+            _level = level;
             _launch = launch;
             _levelCopy = levelCopy;
             _campaignNumber = campaignNumber;
@@ -226,13 +231,19 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
                 cannon.Hits++;
         }
 
-        public void OnTowerBought(TowerTypes towerType, int level, int cost)
+        public void OnTowerBought(TowerTypes towerType, int level, int cost, Vector3 position)
         {
             if (IsAfterEnd)
                 return;
 
             _currentStage.Gold.TowerPurchases += cost;
-            _currentStage.Towers.Bought.Add(new PlaytestTowerDeal { Tower = towerType, Level = level, Gold = cost });
+            _currentStage.Towers.Bought.Add(new PlaytestTowerDeal
+            {
+                Tower = towerType,
+                Level = level,
+                Slot = FindSlotNumber(position),
+                Gold = cost,
+            });
 
             if (level > FIRST_TOWER_LEVEL)
                 RemoveStandingTower(towerType, level - 1);
@@ -240,24 +251,36 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             AddStandingTower(towerType, level);
         }
 
-        public void OnTowerSold(TowerTypes towerType, int level, int gold)
+        public void OnTowerSold(TowerTypes towerType, int level, int gold, Vector3 position)
         {
             if (IsAfterEnd)
                 return;
 
             _currentStage.Gold.Sales += gold;
-            _currentStage.Towers.Sold.Add(new PlaytestTowerDeal { Tower = towerType, Level = level, Gold = gold });
+            _currentStage.Towers.Sold.Add(new PlaytestTowerDeal
+            {
+                Tower = towerType,
+                Level = level,
+                Slot = FindSlotNumber(position),
+                Gold = gold,
+            });
 
             RemoveStandingTower(towerType, level);
         }
 
-        public void OnAbilityBought(TowerTypes towerType, AbilityConfig ability, int cost)
+        public void OnAbilityBought(TowerTypes towerType, AbilityConfig ability, int cost, Vector3 position)
         {
             if (IsAfterEnd)
                 return;
 
             _currentStage.Gold.AbilityPurchases += cost;
-            _currentStage.Towers.Abilities.Add(new PlaytestAbilityPurchase { Tower = towerType, Ability = ability.Name, Gold = cost });
+            _currentStage.Towers.Abilities.Add(new PlaytestAbilityPurchase
+            {
+                Tower = towerType,
+                Slot = FindSlotNumber(position),
+                Ability = ability.Name,
+                Gold = cost,
+            });
         }
 
         // Золото за скип приходит сразу после смены стейджа, в том же вызове: оно — доход закрытого стейджа и часть
@@ -593,6 +616,24 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         }
 
         private int ToLevelStageNumber(int runStageNumber) => runStageNumber + _stageOffset;
+
+        // Номер места под башню — как в срезе и Scene View: позиция в списке Level.TowersPositions с единицы. Башня
+        // ставится ровно в точку места, поэтому допуск малый; null — позиция не совпала ни с одним местом.
+        private int? FindSlotNumber(Vector3 position)
+        {
+            IReadOnlyList<Transform> slots = _level.TowersPositions;
+
+            if (slots == null)
+                return null;
+
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (slots[i] != null && Vector3.Distance(slots[i].position, position) <= SLOT_MATCH_DISTANCE)
+                    return i + 1;
+            }
+
+            return null;
+        }
 
         private void AddStandingTower(TowerTypes towerType, int level)
         {

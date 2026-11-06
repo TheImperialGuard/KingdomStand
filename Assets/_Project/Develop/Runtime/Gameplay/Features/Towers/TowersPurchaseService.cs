@@ -47,10 +47,6 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Towers
 
             _wallet.Spend(CurrencyTypes.Gold, towerConfig.Cost);
 
-            #if UNITY_EDITOR
-                PlaytestHooks.NotifyTowerBought(type, level, towerConfig.Cost);
-            #endif
-
             Debug.Log($"Башня куплена. Остаток золота: {_wallet.GetCurrency(CurrencyTypes.Gold).Value}");
 
             return true;
@@ -63,7 +59,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Towers
             _wallet.Add(CurrencyTypes.Gold, goldForSell);
 
             #if UNITY_EDITOR
-                PlaytestHooks.NotifyTowerSold(tower.TowerType.Value, tower.TowerLevel.Value, goldForSell);
+                PlaytestHooks.NotifyTowerSold(tower.TowerType.Value, tower.TowerLevel.Value, goldForSell, tower.Transform.position);
             #endif
 
             Debug.Log($"Башня продана. Текущее золото: {_wallet.GetCurrency(CurrencyTypes.Gold).Value}");
