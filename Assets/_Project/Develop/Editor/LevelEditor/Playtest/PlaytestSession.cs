@@ -76,7 +76,13 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
 
         public int? GetStartWaveNumber() => Launch.IsEndless ? Launch.StartWaveNumber : null;
 
-        public void ProcessRegistrations(DIContainer container) => container.RegisterAsSingle(CreateLog).NonLazy();
+        public void ProcessRegistrations(DIContainer container)
+        {
+            container.RegisterAsSingle(CreateLog).NonLazy();
+
+            if (Launch.IsAutomated)
+                PlaytestBot.TryRegister(container);
+        }
 
         public void OnGameEnded(LevelResults results) => _log?.OnGameEnded(results);
 

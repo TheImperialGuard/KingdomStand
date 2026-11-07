@@ -105,6 +105,9 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         // Настоящий номер идущего стейджа; NOT_STARTED_STAGE_NUMBER — первый стейдж прогона ещё не начался.
         public int CurrentStageNumber => _hasStarted ? _currentStage.Stage : NOT_STARTED_STAGE_NUMBER;
 
+        // Итог прогона дописан — для бота плейтеста, который по нему выходит из Play Mode.
+        public bool IsCompleted => _isCompleted;
+
         private float GameTime => Time.time - _runStartTime;
 
         private int Gold => _wallet.GetCurrency(CurrencyTypes.Gold).Value;
