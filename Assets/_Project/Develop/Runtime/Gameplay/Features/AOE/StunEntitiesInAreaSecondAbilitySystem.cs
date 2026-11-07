@@ -1,15 +1,20 @@
-﻿using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
+﻿using System;
+using System.Collections.Generic;
+using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Systems;
 using Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Features.AOE
 {
-    public class StunEntitiesInAreaSecondAbilitySystem : IInitializableSystem, IDisposableSystem
+    // «Морозный шторм»: в момент срабатывания на месте цели ложится ледяное поле на время заморозки. Враги в поле
+    // и все, кто войдёт в него позже, заморожены до его таяния. Поле проверяется не каждый кадр, а с интервалом,
+    // как зона клича вожака (WarCryZoneSystem); повторная заморозка продлевает статус, а не обрезает его
+    public class StunEntitiesInAreaSecondAbilitySystem : IInitializableSystem, IUpdatableSystem, IDisposableSystem
     {
+        private const float FieldCheckInterval = 0.1f;
+
         private readonly AreaEntitiesDetectorService _areaEntitiesDetectorService;
         private readonly StatusesFactory _statusesFactory;
 
@@ -22,8 +27,12 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.AOE
 
         private IDisposable _abilityDelayDisposable;
 
+        private Vector3 _fieldCenter;
+        private float _fieldTimeLeft;
+        private float _timeToFieldCheck;
+
         public StunEntitiesInAreaSecondAbilitySystem(
-            AreaEntitiesDetectorService areaEntitiesDetectorService, 
+            AreaEntitiesDetectorService areaEntitiesDetectorService,
             StatusesFactory statusesFactory)
         {
             _areaEntitiesDetectorService = areaEntitiesDetectorService;
@@ -42,6 +51,22 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.AOE
             _abilityDelayDisposable = _secondAbilityDelayEndEvent.Subscribe(OnAbilityDelayEnd);
         }
 
+        public void OnUpdate(float deltaTime)
+        {
+            if (_fieldTimeLeft <= 0)
+                return;
+
+            _fieldTimeLeft -= deltaTime;
+            _timeToFieldCheck -= deltaTime;
+
+            if (_fieldTimeLeft <= 0 || _timeToFieldCheck > 0)
+                return;
+
+            _timeToFieldCheck = FieldCheckInterval;
+
+            FreezeEntitiesInField();
+        }
+
         public void OnDispose()
         {
             _abilityDelayDisposable.Dispose();
@@ -56,27 +81,36 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.AOE
             if (target == null || target.IsInit == false)
                 return;
 
-            List<Entity> entities = _areaEntitiesDetectorService.GetEntitiesInArea(
-                target.Transform.position,
-                _areaRadius.Value);
+            _fieldCenter = target.Transform.position;
+            _fieldTimeLeft = _stunDuration.Value;
+            _timeToFieldCheck = FieldCheckInterval;
+
+            FreezeEntitiesInField();
+        }
+
+        // Заморозка — до таяния поля: кто вошёл позже, стоит меньше, а размораживаются все вместе, когда исчезает круг.
+        // Уже замороженные в поле получают тот же срок, и их статус не меняется
+        private void FreezeEntitiesInField()
+        {
+            List<Entity> entities = _areaEntitiesDetectorService.GetEntitiesInArea(_fieldCenter, _areaRadius.Value);
 
             foreach (Entity entity in entities)
             {
                 if (entity.TryGetIsStunned(out ReactiveVariable<bool> isStunned) == false)
                     continue;
 
-                Stun(entity);
+                Stun(entity, _fieldTimeLeft);
             }
         }
 
-        private void Stun(Entity entity)
+        private void Stun(Entity entity, float duration)
         {
             Status status = _statusesFactory.CreateFor(
-                entity, 
-                StatusesTypes.Stun, 
-                _source, 
-                _stunDuration.Value, 
-                _stunDuration.Value);
+                entity,
+                StatusesTypes.Stun,
+                _source,
+                duration,
+                duration);
 
             entity.Statuses.AddElement(status);
         }

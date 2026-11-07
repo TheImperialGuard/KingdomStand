@@ -41,7 +41,7 @@ namespace Assets._Project.Develop.Runtime.Utilities.SimpleMono
                 return;
             }
 
-            float scale = originalDuration / _targetDuration;
+            float scale = originalDuration / (_targetDuration + _additionalTime);
             SetTimeScale(scale);
         }
 
@@ -55,7 +55,7 @@ namespace Assets._Project.Develop.Runtime.Utilities.SimpleMono
                     continue;
 
                 var main = system.main;
-                main.simulationSpeed = _baseSimulationSpeeds[system] * scale - _additionalTime;
+                main.simulationSpeed = _baseSimulationSpeeds[system] * scale;
             }
         }
 
@@ -111,11 +111,11 @@ namespace Assets._Project.Develop.Runtime.Utilities.SimpleMono
                     continue;
                 }
 
-                float particleLifetime = GetMaxLifetime(main.startLifetime);
+                float particleLifetime = GetMaxValue(main.startLifetime);
 
                 float systemDuration =
                     main.startDelay.constantMax +
-                    main.duration +
+                    GetEmissionEnd(system) +
                     particleLifetime;
 
                 longestDuration = Mathf.Max(longestDuration, systemDuration);
@@ -124,23 +124,49 @@ namespace Assets._Project.Develop.Runtime.Utilities.SimpleMono
             return longestDuration;
         }
 
-        private static float GetMaxLifetime(ParticleSystem.MinMaxCurve lifetime)
+        // Непрерывный выпуск идёт весь цикл системы, а у системы из одних вспышек последние частицы появляются
+        // с последней вспышкой: вспышка в начале цикла живёт время жизни частиц, а не цикл плюс время жизни
+        private static float GetEmissionEnd(ParticleSystem system)
         {
-            return lifetime.mode switch
+            ParticleSystem.MainModule main = system.main;
+            ParticleSystem.EmissionModule emission = system.emission;
+
+            if (GetMaxValue(emission.rateOverTime) > 0 || GetMaxValue(emission.rateOverDistance) > 0)
+                return main.duration;
+
+            float lastBurstTime = 0f;
+
+            for (int i = 0; i < emission.burstCount; i++)
+            {
+                ParticleSystem.Burst burst = emission.GetBurst(i);
+
+                float burstEnd = burst.cycleCount == 0
+                    ? main.duration
+                    : burst.time + (burst.cycleCount - 1) * burst.repeatInterval;
+
+                lastBurstTime = Mathf.Max(lastBurstTime, Mathf.Min(burstEnd, main.duration));
+            }
+
+            return lastBurstTime;
+        }
+
+        private static float GetMaxValue(ParticleSystem.MinMaxCurve curve)
+        {
+            return curve.mode switch
             {
                 ParticleSystemCurveMode.Constant =>
-                    lifetime.constant,
+                    curve.constant,
 
                 ParticleSystemCurveMode.TwoConstants =>
-                    lifetime.constantMax,
+                    curve.constantMax,
 
                 ParticleSystemCurveMode.Curve =>
-                    lifetime.curveMultiplier,
+                    curve.curveMultiplier,
 
                 ParticleSystemCurveMode.TwoCurves =>
-                    lifetime.curveMultiplier,
+                    curve.curveMultiplier,
 
-                _ => lifetime.constantMax
+                _ => curve.constantMax
             };
         }
     }

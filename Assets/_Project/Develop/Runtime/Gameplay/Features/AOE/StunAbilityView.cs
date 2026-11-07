@@ -9,9 +9,13 @@ using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Features.AOE
 {
+    // Ледяное поле «Морозного шторма»: круг живёт ровно время поля и совпадает с ним по размеру
+    // (StunEntitiesInAreaSecondAbilitySystem)
     public class StunAbilityView : ParticleEffectsEntityView
     {
         [SerializeField] private ParticleSystem _effectPrefab;
+        // Радиус круга эффекта при масштабе префаба: по нему круг подгоняется под радиус поля из конфига
+        [SerializeField, Min(0.01f)] private float _effectPrefabRadius = 0.95f;
 
         private Entity _entity;
 
@@ -65,6 +69,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.AOE
                 return;
 
             ParticleSystem effect = EffectsPool.Spawn(_effectPrefab, target.Transform.position);
+
+            // Враг замерзает, когда касается поля телом, поэтому край круга — это радиус поля
+            effect.transform.localScale = _effectPrefab.transform.localScale * (_areaEffectRadius.Value / _effectPrefabRadius);
 
             ParticleEffectTimeScaler timeScaler = effect.GetComponent<ParticleEffectTimeScaler>();
 
