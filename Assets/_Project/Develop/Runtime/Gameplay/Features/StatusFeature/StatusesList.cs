@@ -7,6 +7,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature
     public class StatusesList
     {
         public event Action<Status> Added;
+        public event Action<Status, Status> Reapplied;
         public event Action<Status> Removed;
 
         private List<Status> _elements = new();
@@ -17,14 +18,15 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature
         {
             Status status = _elements.FirstOrDefault(status => status.Type == element.Type);
 
-            // Статус того же типа не дублируется: повторное наложение лишь перезапускает его таймер через Added
-            if (status == null)
+            // Статус того же типа не дублируется: повторное наложение продлевает уже наложенный (StatusesLifeCycleSystem)
+            if (status != null)
             {
-                status = element;
-                _elements.Add(status);
+                Reapplied?.Invoke(status, element);
+                return;
             }
 
-            Added?.Invoke(status);
+            _elements.Add(element);
+            Added?.Invoke(element);
         }
 
         public virtual void RemoveElement(Status element)

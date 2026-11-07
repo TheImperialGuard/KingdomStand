@@ -53,6 +53,13 @@ namespace Assets._Project.Develop.Runtime.Utilities.Timer
             _cooldownProcess = _coroutinePerformer.StartPerform(CooldownProcess());
         }
 
+        public void Restart(float cooldown)
+        {
+            _cooldown = cooldown;
+
+            Restart();
+        }
+
         private IEnumerator CooldownProcess()
         {
             _currentTime.Value = _cooldown;

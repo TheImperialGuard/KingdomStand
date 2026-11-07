@@ -27,6 +27,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature
             _statuses = entity.Statuses;
 
             _statuses.Added += OnStatusAdded;
+            _statuses.Reapplied += OnStatusReapplied;
             _statuses.Removed += OnStatusRemoved;
         }
 
@@ -39,6 +40,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature
                 disposable.Dispose();
 
             _statuses.Added -= OnStatusAdded;
+            _statuses.Reapplied -= OnStatusReapplied;
             _statuses.Removed -= OnStatusRemoved;
 
             _activeStatuses.Clear();
@@ -47,12 +49,6 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature
 
         private void OnStatusAdded(Status status)
         {
-            if (_activeStatuses.ContainsKey(status))
-            {
-                _activeStatuses[status].Restart();
-                return;
-            }
-
             TimerService timer = _timerServiceFactory.Create(status.InitialTime.Value);
 
             _timerCooldownEndedDisposablesWithTimers.Add(timer, timer.CooldownEndedWithTimer.Subscribe(OnTimerCooldownEnded));
@@ -60,6 +56,21 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature
             _activeStatuses.Add(status, timer);
 
             timer.Restart();
+        }
+
+        // Повторное наложение продлевает статус до большей из длительностей: короткое оглушение пушки не обрезает
+        // заморозку «Морозного шторма», а остаток ледяного поля — оглушение пушки
+        private void OnStatusReapplied(Status status, Status reappliedStatus)
+        {
+            if (_activeStatuses.TryGetValue(status, out TimerService timer) == false)
+                return;
+
+            float duration = reappliedStatus.InitialTime.Value;
+
+            if (timer.CurrentTime.Value >= duration)
+                return;
+
+            timer.Restart(duration);
         }
 
         private void OnTimerCooldownEnded(TimerService timer)
