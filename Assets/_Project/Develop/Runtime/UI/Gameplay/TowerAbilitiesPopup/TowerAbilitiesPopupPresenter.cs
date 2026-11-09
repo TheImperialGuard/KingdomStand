@@ -166,6 +166,10 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
 
             SetCurrentAbilities();
             Disarm();
+
+            // Золото списано раньше, чем способность получила уровень, и окно перерисовалось по списанию со старым уровнем.
+            // Если на следующий уровень золота не хватило, заряд снят ещё тогда, и Disarm кнопки уже не перерисует
+            RefreshButtons();
         }
 
         private void ProvideAbility((AbilityConfig config, Ability ability) abilityWithInfo)
