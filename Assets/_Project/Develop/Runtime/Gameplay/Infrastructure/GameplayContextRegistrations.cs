@@ -160,6 +160,8 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
 
             container.RegisterAsSingle(CreateStartBossMusicService).NonLazy();
 
+            container.RegisterAsSingle(CreateBossGatesService).NonLazy();
+
             container.RegisterAsSingle(CreateCameraMover);
 
             container.RegisterAsSingle(CreateTimeScalePauseService);
@@ -446,6 +448,11 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
         private static StartBossMusicService CreateStartBossMusicService(DIContainer c)
         {
             return new StartBossMusicService(c.Resolve<MusicSwitcherService>(), c.Resolve<EntitiesLifeContext>());
+        }
+
+        private static BossGatesService CreateBossGatesService(DIContainer c)
+        {
+            return new BossGatesService(c.Resolve<Level>(), c.Resolve<EntitiesLifeContext>());
         }
 
         private static GameplayUIRoot CreateGameplayUIRoot(DIContainer c)
