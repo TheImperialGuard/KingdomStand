@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
-using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
 using UnityEditor;
 using UnityEngine;
@@ -104,7 +103,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Window
 
             if (meleeEnemy.IsBoss)
             {
-                string bossHitDivider = LevelEditorTexts.Number(EntitiesHelper.BossMaxHealthDividerPerHit);
+                string bossHitDivider = LevelEditorTexts.Number(meleeEnemy.BossMaxHealthDividerPerHit);
                 text.Append($"\nБосс: за один удар теряет не больше 1/{bossHitDivider} HP");
             }
 

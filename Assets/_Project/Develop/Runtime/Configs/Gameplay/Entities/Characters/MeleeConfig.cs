@@ -20,6 +20,11 @@ namespace Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters
         [field: SerializeField, Min(0)] public int DamageOnFinishPath { get; private set; } = 1;
         [field: SerializeField, Min(0)] public int GoldOnDeath { get; private set; } = 10;
         [field: SerializeField] public bool IsBoss { get; private set; } = false;
+
+        // Один удар снимает с босса не больше 1/N его максимального здоровья, где N — это значение. У обычных врагов
+        // не действует. Упирается в предел прежде всего «Дематериализация»: её урон срезается до 1/N.
+        [field: SerializeField, Min(1)] public float BossMaxHealthDividerPerHit { get; private set; } = 4;
+
         [field: SerializeField] public bool IsFlying { get; private set; } = false;
         [field: SerializeField] public EnemyKinds Kind { get; private set; } = EnemyKinds.None;
         [field: SerializeField] public EnemyAbilityConfig Ability { get; private set; }

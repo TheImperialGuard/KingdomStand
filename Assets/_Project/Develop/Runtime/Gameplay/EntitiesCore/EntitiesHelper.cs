@@ -1,5 +1,4 @@
 ﻿using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
-using Assets._Project.Develop.Runtime.Gameplay.Features.Enemies;
 using Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature;
 using Assets._Project.Develop.Runtime.Gameplay.Features.TeamsFeature;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
@@ -10,9 +9,6 @@ namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore
 {
     public class EntitiesHelper
     {
-        // Один удар снимает с босса не больше 1/N его максимального здоровья, где N — это значение
-        public const float BossMaxHealthDividerPerHit = 4;
-
         public static bool TryTakeDamageFrom(Entity source, Entity target, float damage)
         {
             if (IsSameTeam(source, target))
@@ -39,8 +35,8 @@ namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore
 
             float finalDamage = CalculateFinalDamage(damage, damageType, damageResistanceType.Value, damageResistanceIndex.Value);
 
-            if (target.TryGetComponent(out IsBoss isBoss))
-                finalDamage = GetDamageForBoss(finalDamage, target);
+            if (target.TryGetBossMaxHealthDividerPerHit(out ReactiveVariable<float> bossMaxHealthDivider))
+                finalDamage = GetDamageForBoss(finalDamage, target, bossMaxHealthDivider.Value);
 
             takeDamageRequest.Invoke(finalDamage);
 
@@ -85,9 +81,11 @@ namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore
             return finalDamage;
         }
 
-        private static float GetDamageForBoss(float damage, Entity target)
+        // Один удар снимает с босса не больше 1/maxHealthDivider его максимального здоровья — у каждого босса своё число
+        // (MeleeConfig.BossMaxHealthDividerPerHit)
+        private static float GetDamageForBoss(float damage, Entity target, float maxHealthDivider)
         {
-            float maxDamageForApply = target.MaxHealth.Value / BossMaxHealthDividerPerHit;
+            float maxDamageForApply = target.MaxHealth.Value / maxHealthDivider;
 
             if (damage > maxDamageForApply)
                 return maxDamageForApply;

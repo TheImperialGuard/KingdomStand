@@ -82,7 +82,11 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Enemies
                         .AddSystem(new EarnGoldOnDeathSystem(_container.Resolve<WalletService>()));
 
                     if (meleeConfig.IsBoss == true)
-                        entity.AddIsBoss();
+                    {
+                        entity
+                            .AddIsBoss()
+                            .AddBossMaxHealthDividerPerHit(new(meleeConfig.BossMaxHealthDividerPerHit));
+                    }
 
                     if (meleeConfig.IsFlying == true)
                         entity.AddIsFlying();

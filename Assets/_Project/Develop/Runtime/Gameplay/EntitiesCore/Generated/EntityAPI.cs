@@ -2229,6 +2229,30 @@ namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore
 			return AddComponent(new Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.IsBoss() ); 
 		}
 
+		public Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.BossMaxHealthDividerPerHit BossMaxHealthDividerPerHitC => GetComponent<Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.BossMaxHealthDividerPerHit>();
+
+		public Assets._Project.Develop.Runtime.Utilities.Reactive.ReactiveVariable<System.Single> BossMaxHealthDividerPerHit => BossMaxHealthDividerPerHitC.Value;
+
+		public bool TryGetBossMaxHealthDividerPerHit(out Assets._Project.Develop.Runtime.Utilities.Reactive.ReactiveVariable<System.Single> value)
+		{
+			bool result = TryGetComponent(out Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.BossMaxHealthDividerPerHit component);
+			if(result)
+				value = component.Value;
+			else
+				value = default(Assets._Project.Develop.Runtime.Utilities.Reactive.ReactiveVariable<System.Single>);
+			return result;
+		}
+
+		public Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Entity AddBossMaxHealthDividerPerHit()
+		{
+			return AddComponent(new Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.BossMaxHealthDividerPerHit() { Value = new Assets._Project.Develop.Runtime.Utilities.Reactive.ReactiveVariable<System.Single>() }); 
+		}
+
+		public Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Entity AddBossMaxHealthDividerPerHit(Assets._Project.Develop.Runtime.Utilities.Reactive.ReactiveVariable<System.Single> value)
+		{
+			return AddComponent(new Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.BossMaxHealthDividerPerHit() {Value = value}); 
+		}
+
 		public Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.IsFlying IsFlyingC => GetComponent<Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.IsFlying>();
 
 		public Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Entity AddIsFlying()

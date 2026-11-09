@@ -38,6 +38,11 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public int GoldOnDeath { get; set; }
         public int DamageOnFinishPath { get; set; }
         public bool IsBoss { get; set; }
+
+        // Только у боссов: один удар снимает не больше 1/N максимального здоровья
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public float? BossMaxHealthDividerPerHit { get; set; }
+
         public bool IsFlying { get; set; }
         public EnemyKinds Kind { get; set; }
 

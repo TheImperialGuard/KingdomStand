@@ -301,6 +301,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 GoldOnDeath = enemy.GoldOnDeath,
                 DamageOnFinishPath = enemy.DamageOnFinishPath,
                 IsBoss = enemy.IsBoss,
+                BossMaxHealthDividerPerHit = enemy.IsBoss ? enemy.BossMaxHealthDividerPerHit : null,
                 IsFlying = enemy.IsFlying,
                 Kind = enemy.Kind,
                 Ability = enemy.Ability != null ? CreateEnemyAbilityReference(enemy.Ability) : null,

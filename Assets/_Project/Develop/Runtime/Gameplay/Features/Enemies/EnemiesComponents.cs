@@ -17,6 +17,12 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Enemies
     {
     }
 
+    // Один удар снимает с босса не больше 1/Value его максимального здоровья
+    public class BossMaxHealthDividerPerHit : IEntityComponent
+    {
+        public ReactiveVariable<float> Value;
+    }
+
     public class IsFlying : IEntityComponent
     {
     }
