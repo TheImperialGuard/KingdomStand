@@ -39,10 +39,14 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Weather
         public void Initialize()
         {
             SceneLighting sceneLighting = SceneLighting.Capture(_sun);
-            SceneLighting levelLighting = _levelLighting == null ? sceneLighting : Measure(_levelLighting);
+            SceneLighting levelLighting = _levelLighting == null ? sceneLighting : Measure(_levelLighting, sceneLighting);
 
             foreach (WeatherKindConfig weather in _config.Weathers)
-                _weathersLighting[weather.Kind] = weather.Lighting == null ? levelLighting : Measure(weather.Lighting);
+            {
+                _weathersLighting[weather.Kind] = weather.Lighting == null
+                    ? levelLighting
+                    : Measure(weather.Lighting, sceneLighting);
+            }
 
             // Замеры ставили сцене свет пресетов — вернуть прежний
             sceneLighting.ApplyTo(_sun);
@@ -90,9 +94,11 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Weather
             return _flashIntensity * _flashRemainingTime / _flashDuration;
         }
 
-        // Свет пресета так, как его ставит LevelLightingService: гармоники окружения из градиента считает сам Unity
-        private SceneLighting Measure(LevelLightingConfig lighting)
+        // Свет пресета так, как его ставит LevelLightingService: гармоники окружения из градиента считает сам Unity.
+        // Сначала — свет сцены: пресет без своей подсветки окружения берёт её от неба сцены, а не от прошлого замера
+        private SceneLighting Measure(LevelLightingConfig lighting, SceneLighting sceneLighting)
         {
+            sceneLighting.ApplyTo(_sun);
             LevelLightingService.Apply(lighting, _sun);
 
             return SceneLighting.Capture(_sun);

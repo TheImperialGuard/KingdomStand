@@ -17,6 +17,9 @@ namespace Assets._Project.Develop.Runtime.Configs.Gameplay.Levels
         [field: SerializeField, Range(0f, 1f)] public float SunShadowStrength { get; private set; } = 1f;
 
         [field: Header("Подсветка окружения — градиент: сверху, с горизонта, снизу")]
+        [field: Tooltip("Снят — подсветка окружения остаётся от неба сцены, а конфиг меняет только солнце")]
+        [field: SerializeField] public bool HasOwnAmbient { get; private set; } = true;
+
         [field: SerializeField] public Color AmbientSkyColor { get; private set; } = new Color(0.212f, 0.227f, 0.259f);
 
         [field: SerializeField] public Color AmbientEquatorColor { get; private set; } = new Color(0.114f, 0.125f, 0.133f);

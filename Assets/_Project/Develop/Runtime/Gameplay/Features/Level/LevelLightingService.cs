@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Features.Level
 {
-    // Ставит сцене свет уровня, если он задан: солнце и градиентную подсветку окружения. Прежний свет возвращать
-    // не нужно: сцена геймплея загружается заново при каждом входе.
+    // Ставит сцене свет уровня, если он задан: солнце и, если у конфига своя подсветка, градиентную подсветку окружения.
+    // Прежний свет возвращать не нужно: сцена геймплея загружается заново при каждом входе.
     public class LevelLightingService : IInitializable
     {
         private readonly Level _level;
@@ -32,7 +32,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Level
         public static void Apply(LevelLightingConfig lighting, Light sun)
         {
             ApplySun(lighting, sun);
-            ApplyAmbient(lighting);
+
+            if (lighting.HasOwnAmbient)
+                ApplyAmbient(lighting);
         }
 
         private static void ApplySun(LevelLightingConfig lighting, Light sun)
