@@ -36,6 +36,8 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
     // Шаг «<место><A|M|C>» — постройка башни на месте (с единицы, как в срезе) или улучшение стоящей там на уровень;
     // «<место>S» — продать башню на месте; «<место>:<1|2>» — следующий уровень первой или второй способности башни IV
     // на месте. SkipMaxEnemies < 0 — без досрочных вызовов; непустой SkipStages — вызывать только эти стейджи.
+    // HandOver — только расставить застройку и отдать игру человеку: бот выполняет шаги плана до старта и отключается,
+    // не запуская стейдж, не ускоряя время и не выходя из Play Mode; «В бой» нажимает игрок. Лог остаётся automated.
     public class PlaytestBot : IInitializable, IDisposable
     {
         private const string PlanPathKey = "KingdomStand.PlaytestBot.PlanPath";
@@ -164,6 +166,12 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             if (_isRunning == false || EditorApplication.isPlaying == false)
                 return;
 
+            if (_plan.HandOver)
+            {
+                HandOverWhenBuilt();
+                return;
+            }
+
             if (_log.IsCompleted)
             {
                 RequestExit();
@@ -182,6 +190,21 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             }
 
             TrySkipStage();
+        }
+
+        // Шаг, на который не хватает золота, застройку не завершит: бот отключается и сообщает, сколько шагов не сделано
+        private void HandOverWhenBuilt()
+        {
+            if (TryPerformNextStep())
+                return;
+
+            int notPerformedCount = _steps.Count - _nextStepIndex;
+
+            if (notPerformedCount > 0)
+                Debug.LogWarning($"Бот плейтеста: не хватило золота, шагов не сделано {notPerformedCount}");
+
+            Debug.Log("Бот плейтеста: застройка расставлена, игра передана игроку");
+            Stop();
         }
 
         // true — шаг сделан или пропущен; false — шагов нет или не хватает золота
@@ -474,6 +497,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
             public int SkipMaxEnemies = -1;
             public int[] SkipStages;
             public string[] Build;
+            public bool HandOver;
         }
 
         private readonly struct Step
