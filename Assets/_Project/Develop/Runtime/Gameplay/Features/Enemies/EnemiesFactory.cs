@@ -91,6 +91,10 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Enemies
                     if (meleeConfig.IsFlying == true)
                         entity.AddIsFlying();
 
+                    if (meleeConfig.IsStunImmune == true)
+                        entity.AddIsStunImmune();
+
+
                     if (meleeConfig.SpawnProcessTime > 0)
                         AddSpawnProcessFor(entity, meleeConfig.SpawnProcessTime);
 

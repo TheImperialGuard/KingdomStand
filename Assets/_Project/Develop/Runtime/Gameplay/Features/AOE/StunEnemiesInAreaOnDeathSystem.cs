@@ -68,6 +68,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.AOE
                 if (entityInArea.HasComponent<IsFlying>())
                     continue;
 
+                if (entityInArea.HasComponent<IsStunImmune>())
+                    continue;
+
                 if (entityInArea.TryGetIsStunned(out ReactiveVariable<bool> isStunned) == false)
                     continue;
 

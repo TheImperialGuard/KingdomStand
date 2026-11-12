@@ -2260,6 +2260,13 @@ namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore
 			return AddComponent(new Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.IsFlying() ); 
 		}
 
+		public Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.IsStunImmune IsStunImmuneC => GetComponent<Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.IsStunImmune>();
+
+		public Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Entity AddIsStunImmune()
+		{
+			return AddComponent(new Assets._Project.Develop.Runtime.Gameplay.Features.Enemies.IsStunImmune() ); 
+		}
+
 		public Assets._Project.Develop.Runtime.Gameplay.Features.ContactStatusInjection.BodyContactInjectingStatuses BodyContactInjectingStatusesC => GetComponent<Assets._Project.Develop.Runtime.Gameplay.Features.ContactStatusInjection.BodyContactInjectingStatuses>();
 
 		public System.Collections.Generic.List<Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature.StatusesTypes> BodyContactInjectingStatuses => BodyContactInjectingStatusesC.Value;

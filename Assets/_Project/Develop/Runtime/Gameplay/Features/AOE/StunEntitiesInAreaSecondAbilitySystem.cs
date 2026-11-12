@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Systems;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Enemies;
 using Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
 using UnityEngine;
@@ -97,6 +98,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.AOE
             foreach (Entity entity in entities)
             {
                 if (entity.TryGetIsStunned(out ReactiveVariable<bool> isStunned) == false)
+                    continue;
+
+                if (entity.HasComponent<IsStunImmune>())
                     continue;
 
                 Stun(entity, _fieldTimeLeft);

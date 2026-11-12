@@ -26,4 +26,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Enemies
     public class IsFlying : IEntityComponent
     {
     }
+
+    // Оглушения башен на врага не действуют
+    public class IsStunImmune : IEntityComponent
+    {
+    }
 }

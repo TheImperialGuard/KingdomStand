@@ -26,6 +26,9 @@ namespace Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters
         [field: SerializeField, Min(1)] public float BossMaxHealthDividerPerHit { get; private set; } = 4;
 
         [field: SerializeField] public bool IsFlying { get; private set; } = false;
+
+        // Не оглушается башнями: ни оглушением ядра пушки, ни ледяным полем «Морозного шторма».
+        [field: SerializeField] public bool IsStunImmune { get; private set; } = false;
         [field: SerializeField] public EnemyKinds Kind { get; private set; } = EnemyKinds.None;
         [field: SerializeField] public EnemyAbilityConfig Ability { get; private set; }
     }
