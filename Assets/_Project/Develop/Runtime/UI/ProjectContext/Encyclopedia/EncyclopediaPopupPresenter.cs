@@ -25,6 +25,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
         private const int PercentMultiplier = 100;
         private const string PercentSign = "%";
         private const string ZeroPercent = "0%";
+        private const string BossHealthSharePrefix = "1/";
 
         private readonly EncyclopediaPopupView _view;
         private readonly EncyclopediaModes _mode;
@@ -219,10 +220,13 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             ShowLeftPage(enemy.Picture, enemy.CharacterName, string.Empty);
 
             if (enemy.IsBoss)
-                AddTrait(_encyclopediaConfig.BossTrait);
+                AddTrait(_encyclopediaConfig.BossTrait, FormatBossTraitDescription(enemy));
 
             if (enemy.IsFlying)
                 AddTrait(_encyclopediaConfig.FlyingTrait);
+
+            if (enemy.IsStunImmune)
+                AddTrait(_encyclopediaConfig.StunImmuneTrait);
 
             _view.LeftPage.SetTraitsVisible(_view.LeftPage.TraitsList.Elements.Count > 0);
 
@@ -247,11 +251,21 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             _view.LeftPage.SetTraitsVisible(false);
         }
 
-        private void AddTrait(EncyclopediaTraitInfo traitInfo)
+        // Предел удара у каждого босса свой (Рагнар — 1/4, вожак — 1/10, йети — 1/25): число берётся из конфига.
+        private string FormatBossTraitDescription(MeleeConfig boss)
+        {
+            string maxHealthShare = BossHealthSharePrefix + DecimalText.Format(boss.BossMaxHealthDividerPerHit);
+
+            return string.Format(_encyclopediaConfig.BossTrait.Description, maxHealthShare);
+        }
+
+        private void AddTrait(EncyclopediaTraitInfo traitInfo) => AddTrait(traitInfo, traitInfo.Description);
+
+        private void AddTrait(EncyclopediaTraitInfo traitInfo, string description)
         {
             EncyclopediaTraitView trait = _viewsFactory.Create<EncyclopediaTraitView>(ViewIDs.EncyclopediaTrait);
             _view.LeftPage.TraitsList.AddElement(trait);
-            trait.Set(traitInfo.Icon, traitInfo.Name, traitInfo.Description);
+            trait.Set(traitInfo.Icon, traitInfo.Name, description);
         }
 
         // Защита от типа урона, которой у врага нет, показывается нулевой и приглушённой.

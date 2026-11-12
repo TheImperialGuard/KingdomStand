@@ -16,8 +16,10 @@ namespace Assets._Project.Develop.Runtime.Configs.Encyclopedia
         [SerializeField] private List<MeleeConfig> _enemies;
         [SerializeField] private List<EncyclopediaStatInfo> _stats;
 
+        // В описании {0} — предел удара по боссу из его конфига, «1/N».
         [field: SerializeField] public EncyclopediaTraitInfo BossTrait { get; private set; }
         [field: SerializeField] public EncyclopediaTraitInfo FlyingTrait { get; private set; }
+        [field: SerializeField] public EncyclopediaTraitInfo StunImmuneTrait { get; private set; }
 
         public IReadOnlyList<EncyclopediaNoteConfig> Notes => _notes;
         public IReadOnlyList<TowerUpgradeTreeConfig> TowerTrees => _towerTrees;
