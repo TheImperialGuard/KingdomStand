@@ -303,6 +303,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 IsBoss = enemy.IsBoss,
                 BossMaxHealthDividerPerHit = enemy.IsBoss ? enemy.BossMaxHealthDividerPerHit : null,
                 IsFlying = enemy.IsFlying,
+                IsStunImmune = enemy.IsStunImmune,
                 Kind = enemy.Kind,
                 Ability = enemy.Ability != null ? CreateEnemyAbilityReference(enemy.Ability) : null,
             };

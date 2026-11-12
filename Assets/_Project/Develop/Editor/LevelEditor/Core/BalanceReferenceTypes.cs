@@ -44,6 +44,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor
         public float? BossMaxHealthDividerPerHit { get; set; }
 
         public bool IsFlying { get; set; }
+
+        // Оглушение ядра пушки и поле «Морозного шторма» на врага не действуют
+        public bool IsStunImmune { get; set; }
+
         public EnemyKinds Kind { get; set; }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
