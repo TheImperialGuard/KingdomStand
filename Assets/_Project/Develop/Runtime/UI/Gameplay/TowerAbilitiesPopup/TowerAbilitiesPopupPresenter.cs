@@ -6,6 +6,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.AbilitiesFeature.Abiliti
 using Assets._Project.Develop.Runtime.Gameplay.Features.Level;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Towers;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups;
 using Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia;
 using Assets._Project.Develop.Runtime.Utilities.CameraManagment;
@@ -47,7 +48,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
             WalletService walletService,
             TowersPlaceholdersService towersPlaceholdersService,
             AbilitiesFactory abilitiesFactory,
-            BoundedOrthoCamera camera)
+            BoundedOrthoCamera camera,
+            UISoundPlayer uiSoundPlayer)
             : base(
                 coroutinesPerformer,
                 rayShooterService,
@@ -56,7 +58,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
                 towersPurchaseService,
                 towersPlaceholdersService,
                 walletService,
-                camera)
+                camera,
+                uiSoundPlayer)
         {
             _view = view;
             _towersAbilitiesListConfig = towersAbilitiesListConfig;

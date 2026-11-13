@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Towers;
 using Assets._Project.Develop.Runtime.UI.CommonViews;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.Utilities.CameraManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
@@ -26,6 +27,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
         private readonly TowerPopupViewBase _view;
         private readonly WalletService _walletService;
         private readonly BoundedOrthoCamera _camera;
+        private readonly UISoundPlayer _uiSoundPlayer;
 
         private TButton? _armedButton;
 
@@ -41,7 +43,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
             TowersPurchaseService towersPurchaseService,
             TowersPlaceholdersService towersPlaceholdersService,
             WalletService walletService,
-            BoundedOrthoCamera camera)
+            BoundedOrthoCamera camera,
+            UISoundPlayer uiSoundPlayer)
             : base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
@@ -50,6 +53,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
             TowersPlaceholdersService = towersPlaceholdersService;
             _walletService = walletService;
             _camera = camera;
+            _uiSoundPlayer = uiSoundPlayer;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -166,6 +170,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
         protected void SellSource()
         {
             TowersPurchaseService.Sell(Source);
+            _uiSoundPlayer.PlayGoldGain();
             TowersPlaceholdersService.CreatePlaceholder(Source.Transform.position);
 
             Source.SelfReleaseRequested.Value = true;

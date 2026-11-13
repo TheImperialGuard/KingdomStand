@@ -3,6 +3,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia;
 using Assets._Project.Develop.Runtime.Utilities.ConfigsManagment;
@@ -41,7 +42,8 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext
                 _container.Resolve<EncyclopediaSectionMemory>(),
                 _container.Resolve<HotkeysService>(),
                 _container.Resolve<ViewsFactory>(),
-                startRecord);
+                startRecord,
+                _container.Resolve<UISoundPlayer>());
         }
     }
 }

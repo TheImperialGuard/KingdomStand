@@ -5,6 +5,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
 using Assets._Project.Develop.Runtime.Meta.Infrastructure;
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Settings;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
 using Assets._Project.Develop.Runtime.Utilities.SceneManagment;
@@ -21,6 +22,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
         private readonly GameplayPresentersFactory _presentersFactory;
         private readonly HotkeysService _hotkeysService;
         private readonly GameplayCycle _gameplayCycle;
+        private readonly UISoundPlayer _uiSoundPlayer;
 
         private AudioSettingsPresenter _audioSettingsPresenter;
         private IDisposable _closeRequestedDisposable;
@@ -34,7 +36,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
             GameplayInputArgs gameplayInputArgs,
             GameplayPresentersFactory presentersFactory,
             HotkeysService hotkeysService,
-            GameplayCycle gameplayCycle)
+            GameplayCycle gameplayCycle,
+            UISoundPlayer uiSoundPlayer)
             : base(coroutinesPerformer, rayShooterService)
         {
             _popupView = popupView;
@@ -45,6 +48,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
             _presentersFactory = presentersFactory;
             _hotkeysService = hotkeysService;
             _gameplayCycle = gameplayCycle;
+            _uiSoundPlayer = uiSoundPlayer;
         }
 
         protected override PopupViewBase PopupView => _popupView;
@@ -55,7 +59,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
 
             CreateAudioSettings();
 
-            _popupView.ContinueClicked += OnContinueClicked;
+            _popupView.ContinueClicked += OnContinueButtonClicked;
             _popupView.ExitClicked += OnExitClicked;
             _popupView.RestartClicked += OnRestartClicked;
 
@@ -103,7 +107,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
 
         private void UnsubscribeFromInput()
         {
-            _popupView.ContinueClicked -= OnContinueClicked;
+            _popupView.ContinueClicked -= OnContinueButtonClicked;
             _popupView.ExitClicked -= OnExitClicked;
             _popupView.RestartClicked -= OnRestartClicked;
 
@@ -111,11 +115,20 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
             _closeRequestedDisposable = null;
         }
 
+        // Esc закрывает окно без звука нажатия: звук — только у кнопки.
+        private void OnContinueButtonClicked()
+        {
+            _uiSoundPlayer.PlayButtonClick();
+            OnContinueClicked();
+        }
+
         private void OnContinueClicked() => OnCloseRequest();
 
         // Уход с уровня посреди боя: бесконечный режим засчитывает забег до перехода на другую сцену
         private void OnExitClicked()
         {
+            _uiSoundPlayer.PlayButtonClick();
+
             _gameplayCycle.ProcessLeave();
 
             _coroutinesPerformer.StartPerform(
@@ -126,6 +139,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
 
         private void OnRestartClicked()
         {
+            _uiSoundPlayer.PlayButtonClick();
+
             _gameplayCycle.ProcessLeave();
 
             _coroutinesPerformer.StartPerform(_sceneSwitcherService.ProcessSwitchTo(Scenes.Gameplay, _gameplayInputArgs.AsRestart()));

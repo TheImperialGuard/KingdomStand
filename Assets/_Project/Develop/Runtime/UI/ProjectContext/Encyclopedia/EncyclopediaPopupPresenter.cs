@@ -9,6 +9,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
 using Assets._Project.Develop.Runtime.Utilities.Text;
@@ -36,6 +37,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
         private readonly HotkeysService _hotkeysService;
         private readonly ViewsFactory _viewsFactory;
         private readonly ScriptableObject _startRecord;
+        private readonly UISoundPlayer _uiSoundPlayer;
 
         private readonly List<IDisposable> _hotkeysDisposables = new();
 
@@ -53,7 +55,8 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             EncyclopediaSectionMemory sectionMemory,
             HotkeysService hotkeysService,
             ViewsFactory viewsFactory,
-            ScriptableObject startRecord)
+            ScriptableObject startRecord,
+            UISoundPlayer uiSoundPlayer)
             : base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
@@ -65,6 +68,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             _hotkeysService = hotkeysService;
             _viewsFactory = viewsFactory;
             _startRecord = startRecord;
+            _uiSoundPlayer = uiSoundPlayer;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -138,13 +142,20 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
         private void OnPreviousClicked()
         {
             if (_spread > 0)
-                ShowSpread(_section, _spread - 1);
+                TurnTo(_spread - 1);
         }
 
         private void OnNextClicked()
         {
             if (_spread < GetLastSpread(_section))
-                ShowSpread(_section, _spread + 1);
+                TurnTo(_spread + 1);
+        }
+
+        // Листание стрелками и клавишами ← → шуршит страницей; на крайнем развороте листать некуда — и звука нет.
+        private void TurnTo(int spread)
+        {
+            ShowSpread(_section, spread);
+            _uiSoundPlayer.PlayPageTurn();
         }
 
         private void OnCloseRequested() => OnCloseRequest();

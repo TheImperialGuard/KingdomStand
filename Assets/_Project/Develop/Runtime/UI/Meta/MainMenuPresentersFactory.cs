@@ -5,6 +5,7 @@ using Assets._Project.Develop.Runtime.Meta.Features.Endless;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 using Assets._Project.Develop.Runtime.Meta.Features.Settings;
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.UI.Meta.MainMenu;
 using Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Endless;
@@ -42,7 +43,8 @@ namespace Assets._Project.Develop.Runtime.UI.Meta
             return new MainMenuScreenPresenter(
                 view,
                 _container.Resolve<MainMenuPopupService>(),
-                _container.Resolve<HotkeysService>());
+                _container.Resolve<HotkeysService>(),
+                _container.Resolve<UISoundPlayer>());
         }
 
         public PlayBoardPopupPresenter CreatePlayBoardPopupPresenter(PlayBoardPopupView view, PlayBoardSteps startStep)

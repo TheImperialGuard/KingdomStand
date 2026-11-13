@@ -17,6 +17,7 @@ using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 using Assets._Project.Develop.Runtime.Meta.Features.Settings;
 using Assets._Project.Develop.Runtime.UI.CommonViews;
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.UI.Gameplay.BossHealthBar;
 using Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup;
@@ -94,7 +95,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<TowersPurchaseService>(),
                 _container.Resolve<WalletService>(),
                 _container.Resolve<TowersPlaceholdersService>(),
-                _container.Resolve<BoundedOrthoCamera>());
+                _container.Resolve<BoundedOrthoCamera>(),
+                _container.Resolve<UISoundPlayer>());
         }
 
         public UpgradeTowerPopupPresenter CreateUpgradeTowerPopupPresenter(UpgradeTowerPopupView view, Entity sourceTower)
@@ -112,7 +114,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<TowersPurchaseService>(),
                 _container.Resolve<WalletService>(),
                 _container.Resolve<TowersPlaceholdersService>(),
-                _container.Resolve<BoundedOrthoCamera>());
+                _container.Resolve<BoundedOrthoCamera>(),
+                _container.Resolve<UISoundPlayer>());
         }
 
         public TowerAbilitiesPopupPresenter CreateTowerAbilitiesPopupPresenter(TowerAbilitiesPopupView view, Entity sourceTower)
@@ -130,7 +133,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<WalletService>(),
                 _container.Resolve<TowersPlaceholdersService>(),
                 _container.Resolve<AbilitiesFactory>(),
-                _container.Resolve<BoundedOrthoCamera>());
+                _container.Resolve<BoundedOrthoCamera>(),
+                _container.Resolve<UISoundPlayer>());
         }
 
         public GameplayScreenPresenter CreateGameplayScreenPresenter(GameplayScreenView view)
@@ -152,7 +156,10 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
 
         public GoldGainPresenter CreateGoldGainPresenter(GoldGainView view)
         {
-            return new GoldGainPresenter(view, _container.Resolve<EarnGoldOnSkipStageService>());
+            return new GoldGainPresenter(
+                view,
+                _container.Resolve<EarnGoldOnSkipStageService>(),
+                _container.Resolve<UISoundPlayer>());
         }
 
         public PlayerHealthPresenter CreatePlayerHealthPresenter(IconTextView view)
@@ -248,7 +255,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _gameplayInputArgs,
                 this,
                 _container.Resolve<HotkeysService>(),
-                _container.Resolve<GameplayCycle>());
+                _container.Resolve<GameplayCycle>(),
+                _container.Resolve<UISoundPlayer>());
         }
 
         public AudioSettingsPresenter CreateAudioSettingsPresenter(AudioSettingsView view)

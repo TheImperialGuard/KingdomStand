@@ -8,6 +8,7 @@ using Assets._Project.Develop.Runtime.Meta.Features.Endless;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 using Assets._Project.Develop.Runtime.Meta.Features.Settings;
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.UI.ProjectContext;
 using Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia;
@@ -55,6 +56,8 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
             container.RegisterAsSingle<ICoroutinesPerformer>(CreateCoroutinesPerformer);
 
             container.RegisterAsSingle(CreateMusicPlayer).NonLazy();
+
+            container.RegisterAsSingle(CreateUISoundPlayer);
 
             container.RegisterAsSingle<ILoadingScreen>(CreateLoadingScreen);
 
@@ -233,6 +236,15 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
                 .Load<MusicPlayer>("Utilities/Audio/MusicPlayer");
 
             return GameObject.Instantiate(musicPlayerPrefab);
+        }
+
+        private static UISoundPlayer CreateUISoundPlayer(DIContainer c)
+        {
+            ResourcesAssetsLoader resourcesAssetsLoader = c.Resolve<ResourcesAssetsLoader>();
+
+            UISoundPlayer uiSoundPlayerPrefab = resourcesAssetsLoader.Load<UISoundPlayer>("UI/UISoundPlayer");
+
+            return GameObject.Instantiate(uiSoundPlayerPrefab);
         }
     }
 }

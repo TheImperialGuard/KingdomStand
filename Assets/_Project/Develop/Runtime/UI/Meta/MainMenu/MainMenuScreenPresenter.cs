@@ -2,6 +2,7 @@
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.UI.Core.Presenters;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels;
 using Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
         private readonly MainMenuScreenView _view;
         private readonly MainMenuPopupService _popupService;
         private readonly HotkeysService _hotkeysService;
+        private readonly UISoundPlayer _uiSoundPlayer;
 
         private IDisposable _closeRequestedDisposable;
 
@@ -27,11 +29,13 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
         public MainMenuScreenPresenter(
             MainMenuScreenView view,
             MainMenuPopupService popupService,
-            HotkeysService hotkeysService)
+            HotkeysService hotkeysService,
+            UISoundPlayer uiSoundPlayer)
         {
             _view = view;
             _popupService = popupService;
             _hotkeysService = hotkeysService;
+            _uiSoundPlayer = uiSoundPlayer;
         }
 
         public void Initialize()
@@ -73,14 +77,25 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
 
         private void OnPlayClicked()
         {
+            _uiSoundPlayer.PlayButtonClick();
+
             _playBoardStartStep = PlayBoardSteps.Modes;
             ToggleTarget(MainMenuPanels.Play);
         }
 
-        private void OnEncyclopediaClicked() => ToggleTarget(MainMenuPanels.Encyclopedia);
+        private void OnEncyclopediaClicked()
+        {
+            _uiSoundPlayer.PlayButtonClick();
+            ToggleTarget(MainMenuPanels.Encyclopedia);
+        }
 
-        private void OnSettingsClicked() => ToggleTarget(MainMenuPanels.Settings);
+        private void OnSettingsClicked()
+        {
+            _uiSoundPlayer.PlayButtonClick();
+            ToggleTarget(MainMenuPanels.Settings);
+        }
 
+        // Без звука нажатия: на компьютере игра закрывается сразу, звук не успел бы прозвучать.
         private void OnExitClicked() => Quit();
 
         private void OnCloseRequested() => SetTarget(MainMenuPanels.None);

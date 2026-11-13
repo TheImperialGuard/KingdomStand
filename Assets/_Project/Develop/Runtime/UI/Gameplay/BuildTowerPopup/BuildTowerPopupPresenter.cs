@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.EntitiesFactory;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Level;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Towers;
+using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups;
 using Assets._Project.Develop.Runtime.Utilities.CameraManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
@@ -40,7 +41,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BuildTowerPopup
             TowersPurchaseService towersPurchaseService,
             WalletService walletService,
             TowersPlaceholdersService towersPlaceholdersService,
-            BoundedOrthoCamera camera)
+            BoundedOrthoCamera camera,
+            UISoundPlayer uiSoundPlayer)
             : base(
                 coroutinesPerformer,
                 rayShooterService,
@@ -49,7 +51,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BuildTowerPopup
                 towersPurchaseService,
                 towersPlaceholdersService,
                 walletService,
-                camera)
+                camera,
+                uiSoundPlayer)
         {
             _view = view;
             _entitiesFactory = entitiesFactory;
