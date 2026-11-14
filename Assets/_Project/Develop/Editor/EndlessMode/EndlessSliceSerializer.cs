@@ -6,6 +6,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Weather;
+using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
 using Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode;
 using Newtonsoft.Json.Linq;
 
@@ -13,8 +14,9 @@ namespace Assets._Project.Develop.Editor.EndlessMode
 {
     // Срез бесконечного уровня — тот же LevelSlice, что у кампании (формат — LevelSliceSerializer). Данные уровня
     // и дороги — из его LevelConfig, блок endless — настройки режима, weather — справочно правила погоды. Вместо своих
-    // стейджей уровня — первые волны, собранные генератором режима, с тем же анализом, что у стейджей кампании, и
-    // добавками: множитель здоровья волны, здоровье с ним, босс и число врагов по тирам.
+    // стейджей уровня — первые волны, собранные генератором режима по зерну-образцу, с тем же анализом, что у стейджей
+    // кампании, и добавками: цикл, тяжёлая дорога и акценты, бюджет и сила, задержки дорог и момент вызова, множители
+    // здоровья волны и босса, здоровье с ними, босс, его сопровождение и число врагов по тирам.
     public static class EndlessSliceSerializer
     {
         // Сколько волн в срезе Docs/Balance. Срез лежит в git и должен выходить одинаковым на любой машине, поэтому
@@ -65,14 +67,19 @@ namespace Assets._Project.Develop.Editor.EndlessMode
             return new EndlessSettingsSlice
             {
                 Seed = config.Seed,
-                EnemiesCount = CreateTable(config.EnemiesCount),
-                Tiers = config.Tiers.Select(CreateTier).ToList(),
-                DelayBetweenSpawns = CreateTable(config.DelayBetweenSpawns),
+                WaveBudget = CreateTable(config.WaveBudget),
+                CycleStrength = config.CycleStrength.ToList(),
+                SpawnTime = CreateTable(config.SpawnTime),
                 RestTime = CreateTable(config.RestTime),
+                Tiers = config.Tiers.Select(CreateTier).ToList(),
+                ThemeWeight = config.ThemeWeight,
+                MinSpacing = config.MinSpacing,
+                SafeCatchUpDistance = config.SafeCatchUpDistance,
                 BossWavesStep = config.BossWavesStep,
-                Bosses = config.Bosses.Select(GetEnemyName).ToList(),
-                BossWaveEnemiesShare = config.BossWaveEnemiesShare,
+                Bosses = config.Bosses.Select(CreateBoss).ToList(),
+                BossWaveBudgetShare = config.BossWaveBudgetShare,
                 HealthMultiplier = CreateTable(config.HealthMultiplier),
+                BossHealthMultiplier = CreateTable(config.BossHealthMultiplier),
                 MaxEnemiesToSkipWave = config.MaxEnemiesToSkipWave,
             };
         }
@@ -115,11 +122,45 @@ namespace Assets._Project.Develop.Editor.EndlessMode
             return new EndlessTierSlice
             {
                 Name = tier.Name ?? string.Empty,
-                KindsPerWave = tier.KindsPerWave,
+                Road = tier.Road,
                 Share = CreateTable(tier.Share),
-                Enemies = tier.Enemies
-                    .Select(enemy => new EndlessTierEnemySlice { Enemy = GetEnemyName(enemy.EnemyConfig), FirstWave = enemy.FirstWave })
-                    .ToList(),
+                KindsPerWave = CreateTable(tier.KindsPerWave),
+                GroupSize = CreateTable(tier.GroupSize),
+                Enemies = tier.Enemies.Select(CreateTierEnemy).ToList(),
+            };
+        }
+
+        private static EndlessTierEnemySlice CreateTierEnemy(EndlessTierEnemy tierEnemy)
+        {
+            return new EndlessTierEnemySlice
+            {
+                Enemy = GetEnemyName(tierEnemy.EnemyConfig),
+                FirstWave = tierEnemy.FirstWave,
+                LastWave = tierEnemy.LastWave,
+                Price = tierEnemy.Price,
+                MaxPerWave = CreateTable(tierEnemy.MaxPerWave),
+                SpawnsLast = tierEnemy.SpawnsLast,
+            };
+        }
+
+        private static EndlessBossSlice CreateBoss(EndlessBoss boss)
+        {
+            return new EndlessBossSlice
+            {
+                Boss = GetEnemyName(boss.Boss),
+                Escort = boss.Escort.Select(CreateEscortGroup).ToList(),
+            };
+        }
+
+        private static EndlessEscortGroupSlice CreateEscortGroup(EndlessEscortGroup escortGroup)
+        {
+            return new EndlessEscortGroupSlice
+            {
+                Enemy = GetEnemyName(escortGroup.Enemy),
+                GroupSize = escortGroup.GroupSize,
+                FirstDelay = escortGroup.FirstDelay,
+                Period = escortGroup.Period,
+                GroupsCount = escortGroup.GroupsCount,
             };
         }
 
@@ -180,13 +221,17 @@ namespace Assets._Project.Develop.Editor.EndlessMode
             {
                 int waveNumber = EndlessEditorWaves.FirstWaveNumber + i;
                 StageStats stageStats = stats.Stages[i];
-                EndlessStageAnalysis stageAnalysis = CreateStageAnalysis(waveNumber, waves[i], stageStats, generator, config);
+                EndlessStageAnalysis stageAnalysis = CreateStageAnalysis(waveNumber, stageStats, generator, config);
+                IReadOnlyList<EnemiesWaveConfig> streams = waves[i].EnemiesWaveConfigs;
 
                 Merge(slice.Stages[i].Analysis, stageAnalysis);
 
                 for (int j = 0; j < slice.Stages[i].Waves.Count; j++)
                 {
-                    float streamHealth = stageStats.Waves[j].Health * stageAnalysis.HealthMultiplier;
+                    bool isBossStream = streams[j].EnemyGroups.Any(group => group.EnemyConfig is MeleeConfig { IsBoss: true });
+                    float multiplier = isBossStream ? config.BossHealthMultiplier.GetValue(waveNumber) : stageAnalysis.HealthMultiplier;
+                    float streamHealth = stageStats.Waves[j].Health * multiplier;
+
                     Merge(slice.Stages[i].Waves[j].Analysis, new EndlessWaveAnalysis { HealthWithMultiplier = streamHealth });
                 }
 
@@ -200,25 +245,40 @@ namespace Assets._Project.Develop.Editor.EndlessMode
 
         private static EndlessStageAnalysis CreateStageAnalysis(
             int waveNumber,
-            EnemiesWavesStageConfig wave,
             StageStats stageStats,
             EndlessWavesGenerator generator,
             EndlessModeConfig config)
         {
-            float multiplier = config.HealthMultiplier.GetValue(waveNumber);
+            EndlessWavePlan plan = generator.GetPlan(waveNumber);
+            EndlessWaveSummary summary = EndlessWaveSummary.Create(plan, config);
+            MeleeConfig boss = plan.Boss?.Boss;
 
-            generator.TryGetBoss(waveNumber, out MeleeConfig boss);
-
-            EndlessWaveSummary summary = EndlessWaveSummary.Create(waveNumber, wave, boss, config);
+            float bossHealth = boss != null ? boss.MaxHealth : 0f;
+            float bossEffectiveHealthPhysic = boss != null ? LevelStatsCalculator.CalculateEffectiveHealth(boss, DamageTypes.Physic) : 0f;
+            float bossEffectiveHealthMagic = boss != null ? LevelStatsCalculator.CalculateEffectiveHealth(boss, DamageTypes.Magic) : 0f;
 
             EndlessStageAnalysis analysis = new()
             {
-                HealthMultiplier = multiplier,
-                HealthWithMultiplier = stageStats.Health * multiplier,
-                EffectiveHealthPhysicWithMultiplier = stageStats.EffectiveHealthPhysic * multiplier,
-                EffectiveHealthMagicWithMultiplier = stageStats.EffectiveHealthMagic * multiplier,
+                Cycle = plan.Cycle,
+                HeavyPath = plan.HeavyPathNumber.ToString(),
+                LightAccent = plan.LightAccent,
+                HeavyAccent = plan.HeavyAccent,
+                Budget = plan.Budget,
+                Strength = plan.Strength,
+                TimeToSkip = plan.TimeToSkip,
+                HealthMultiplier = config.HealthMultiplier.GetValue(waveNumber),
+                BossHealthMultiplier = boss != null ? config.BossHealthMultiplier.GetValue(waveNumber) : null,
+                HealthWithMultiplier = EndlessEditorWaves.ApplyMultipliers(stageStats.Health, bossHealth, waveNumber, config),
+                EffectiveHealthPhysicWithMultiplier = EndlessEditorWaves.ApplyMultipliers(
+                    stageStats.EffectiveHealthPhysic, bossEffectiveHealthPhysic, waveNumber, config),
+                EffectiveHealthMagicWithMultiplier = EndlessEditorWaves.ApplyMultipliers(
+                    stageStats.EffectiveHealthMagic, bossEffectiveHealthMagic, waveNumber, config),
                 Boss = boss != null ? boss.name : null,
+                BossEscortCount = boss != null ? summary.BossEscortCount : null,
             };
+
+            for (int i = 0; i < generator.PathNumbers.Count; i++)
+                analysis.PathsDelays[generator.PathNumbers[i].ToString()] = plan.PathsDelays[i];
 
             for (int i = 0; i < config.Tiers.Count; i++)
                 analysis.EnemiesByTier[GetTierName(config.Tiers[i], i)] = summary.TiersEnemiesCounts[i];

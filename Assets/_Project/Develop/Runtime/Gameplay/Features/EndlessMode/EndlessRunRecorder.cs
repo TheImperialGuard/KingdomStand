@@ -46,7 +46,8 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode
             if (isNewRecord)
                 _coroutinesPerformer.StartPerform(_playerDataProvider.SaveAsync());
 
-            Debug.Log($"Забег бесконечного режима: волна {reachedWave}, засчитан: {isRecordable}, рекорд: {_recordService.BestWave}");
+            Debug.Log($"Забег бесконечного режима: волна {reachedWave}, засчитан: {isRecordable}, " +
+                $"рекорд: {_recordService.BestWave}, зерно: {_stagesSource.Seed}");
 
             return new EndlessRunResult(reachedWave, _recordService.BestWave, isNewRecord);
         }

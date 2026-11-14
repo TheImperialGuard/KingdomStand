@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Assets._Project.Develop.Editor.LevelEditor;
-using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
+using Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Level;
 using Assets._Project.Develop.Runtime.Gameplay.GameMode;
 
@@ -11,10 +12,13 @@ namespace Assets._Project.Develop.Editor.EndlessMode
     // работает, но скорее всего не задумано.
     public static class EndlessModeConfigValidator
     {
-        private const string EnemiesCountTableName = "Число врагов";
-        private const string DelayBetweenSpawnsTableName = "Интервал между врагами";
+        private const string WaveBudgetTableName = "Бюджет волны";
+        private const string SpawnTimeTableName = "Окно выхода";
         private const string RestTimeTableName = "Передышка";
         private const string HealthMultiplierTableName = "Множитель здоровья";
+        private const string BossHealthMultiplierTableName = "Множитель здоровья боссов";
+
+        private const int FirstWaveNumber = EndlessWavesGenerator.FirstWaveNumber;
 
         // levelPrefab — префаб уровня режима, загруженный по его PrefabPath; null, если загрузить не удалось
         public static List<LevelIssue> Validate(EndlessModeConfig config, Level levelPrefab)
@@ -22,10 +26,12 @@ namespace Assets._Project.Develop.Editor.EndlessMode
             List<LevelIssue> issues = new();
 
             ValidateLevel(config, levelPrefab, issues);
-            ValidateTable(config.EnemiesCount, EnemiesCountTableName, issues);
-            ValidateTable(config.DelayBetweenSpawns, DelayBetweenSpawnsTableName, issues);
+            ValidateTable(config.WaveBudget, WaveBudgetTableName, issues);
+            ValidateTable(config.SpawnTime, SpawnTimeTableName, issues);
             ValidateTable(config.RestTime, RestTimeTableName, issues);
             ValidateTable(config.HealthMultiplier, HealthMultiplierTableName, issues);
+            ValidateTable(config.BossHealthMultiplier, BossHealthMultiplierTableName, issues);
+            ValidateCycleStrength(config, issues);
             ValidateTiers(config, issues);
             ValidateBosses(config, issues);
 
@@ -59,6 +65,18 @@ namespace Assets._Project.Develop.Editor.EndlessMode
                 issues.Add(LevelIssue.Error($"На префабе уровня {levelPrefab.name} нет ни одной дороги"));
         }
 
+        private static void ValidateCycleStrength(EndlessModeConfig config, List<LevelIssue> issues)
+        {
+            if (config.CycleStrength.Count >= config.BossWavesStep)
+            {
+                issues.Add(LevelIssue.Warning(
+                    $"«Пила» цикла длиннее цикла: волн между боссами {config.BossWavesStep - 1}, лишние множители не действуют"));
+            }
+
+            if (config.CycleStrength.Any(strength => strength < 0f))
+                issues.Add(LevelIssue.Error("«Пила» цикла: множитель меньше нуля"));
+        }
+
         private static void ValidateTiers(EndlessModeConfig config, List<LevelIssue> issues)
         {
             if (config.Tiers.Count == 0)
@@ -67,19 +85,36 @@ namespace Assets._Project.Develop.Editor.EndlessMode
                 return;
             }
 
+            bool hasFirstWaveEnemies = false;
+
             for (int i = 0; i < config.Tiers.Count; i++)
             {
                 EndlessTier tier = config.Tiers[i];
                 string tierName = GetTierName(tier, i);
 
                 ValidateTable(tier.Share, $"Доля, {tierName}", issues);
+                ValidateTable(tier.KindsPerWave, $"Видов в волне, {tierName}", issues);
+                ValidateTable(tier.GroupSize, $"Звено, {tierName}", issues);
 
                 if (tier.Enemies.Count == 0)
                     issues.Add(LevelIssue.Warning($"{tierName}: нет врагов, его доля уходит другим тирам"));
 
                 foreach (EndlessTierEnemy tierEnemy in tier.Enemies)
                     ValidateTierEnemy(tierEnemy, tierName, issues);
+
+                bool hasShareKeys = tier.Share.Keys.Count > 0;
+
+                if (hasShareKeys && tier.Share.GetValue(FirstWaveNumber) > 0f)
+                {
+                    if (tier.Enemies.Any(tierEnemy => tierEnemy.IsOpen(FirstWaveNumber)))
+                        hasFirstWaveEnemies = true;
+                    else
+                        issues.Add(LevelIssue.Warning($"{tierName}: доля на первой волне больше нуля, а годных видов нет"));
+                }
             }
+
+            if (hasFirstWaveEnemies == false && issues.Any(issue => issue.IsError) == false)
+                issues.Add(LevelIssue.Error("На первой волне ни у одного тира с долей нет годного вида: волна выйдет пустой"));
         }
 
         private static void ValidateTierEnemy(EndlessTierEnemy tierEnemy, string tierName, List<LevelIssue> issues)
@@ -90,8 +125,22 @@ namespace Assets._Project.Develop.Editor.EndlessMode
                 return;
             }
 
+            string enemyName = tierEnemy.EnemyConfig.name;
+
             if (tierEnemy.EnemyConfig.IsBoss)
-                issues.Add(LevelIssue.Warning($"{tierName}: {tierEnemy.EnemyConfig.name} — босс, он выйдет как обычный враг"));
+                issues.Add(LevelIssue.Warning($"{tierName}: {enemyName} — босс, он выйдет как обычный враг"));
+
+            if (tierEnemy.Price <= 0f)
+                issues.Add(LevelIssue.Error($"{tierName}: у {enemyName} цена не больше нуля"));
+
+            if (tierEnemy.LastWave != EndlessTierEnemy.NoLastWave && tierEnemy.LastWave < tierEnemy.FirstWave)
+                issues.Add(LevelIssue.Warning($"{tierName}: у {enemyName} последняя волна раньше первой, вид не выйдет"));
+
+            if (tierEnemy.EnemyConfig.MoveSpeed <= 0f)
+                issues.Add(LevelIssue.Error($"{tierName}: {enemyName} не двигается — для раскладки нужна скорость"));
+
+            if (tierEnemy.HasMaxPerWave)
+                ValidateTable(tierEnemy.MaxPerWave, $"Потолок {enemyName}, {tierName}", issues);
         }
 
         private static void ValidateBosses(EndlessModeConfig config, List<LevelIssue> issues)
@@ -102,19 +151,22 @@ namespace Assets._Project.Develop.Editor.EndlessMode
                 return;
             }
 
-            foreach (MeleeConfig boss in config.Bosses)
+            foreach (EndlessBoss boss in config.Bosses)
             {
-                if (boss == null)
+                if (boss == null || boss.Boss == null)
                 {
-                    issues.Add(LevelIssue.Warning("Пустой элемент в списке боссов: его волна выйдет обычной"));
+                    issues.Add(LevelIssue.Warning("Пустой босс в списке боссов: его волна выйдет обычной"));
                     continue;
                 }
 
-                if (boss.IsBoss == false)
+                if (boss.Boss.IsBoss == false)
                 {
                     issues.Add(LevelIssue.Warning(
-                        $"{boss.name} в списке боссов — не босс: без полоски и музыки босса, вызов волны при нём открыт"));
+                        $"{boss.Boss.name} в списке боссов — не босс: без полоски и музыки босса, вызов волны при нём открыт"));
                 }
+
+                if (boss.Escort.Any(escortGroup => escortGroup.Enemy == null))
+                    issues.Add(LevelIssue.Warning($"Сопровождение {boss.Boss.name}: пустой враг, группа не выйдет"));
             }
         }
 

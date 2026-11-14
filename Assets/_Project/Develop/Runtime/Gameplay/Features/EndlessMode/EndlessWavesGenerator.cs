@@ -1,52 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
-using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
-using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Stages;
 using Assets._Project.Develop.Runtime.Gameplay.Features.LevelNavigation;
 using UnityEngine;
-using Random = System.Random;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode
 {
     // Собирает волну бесконечного режима по её номеру — обычный EnemiesWavesStageConfig, который играет конвейер стейджей.
-    // Состояния забега у генератора нет: случайность берётся из зерна конфига и номера волны, и волна N всегда одна и та
-    // же. Поэтому его же зовёт таблица волн в инспекторе конфига режима.
+    // Волна собирается в два шага: состав (EndlessWaveComposer — бюджет силы, тиры, жребий видов) и раскладка
+    // (EndlessWaveArranger — роли дорог, звенья, окно выхода, потоки). Роли дорог и акценты дают циклы между боссами
+    // (EndlessCycles), разрывы на стыке волн — EndlessWaveJoints.
     //
-    // Число врагов волны делится между тирами по их долям методом наибольшего остатка; доля тира, у которого на этой
-    // волне ещё нет открытых врагов, достаётся остальным пропорционально. Внутри тира — несколько случайных видов из
-    // открытых. Каждая группа делится между всеми дорогами уровня; на дороге сначала идут слабые, потом сильнее — в
-    // порядке тиров. Волна длится, пока выходят враги самого позднего потока, плюс передышка; досрочный вызов следующей
-    // открывается, когда вышел последний враг.
-    //
-    // Каждая волна с номером, кратным шагу боссов, — боссовая: обычных врагов в ней — доля от волны того же номера, а
-    // первым отдельным потоком выходит босс. Боссы идут по кругу, дорога босса меняется от босса к боссу; обычные враги
-    // на его дороге выходят через интервал после него.
+    // Случайность берётся из зерна забега, поэтому волна N одна и та же у одного зерна. Раскладка волны зависит от хвостов
+    // прошлых: генератор раскладывает волны по порядку от первой и запоминает их. Момент вызова волны N зависит от головы
+    // волны N + 1, поэтому, отдавая волну N, генератор раскладывает и следующую. Таблица волн в инспекторе и срез строят
+    // волны тем же генератором по зерну-образцу конфига.
     public class EndlessWavesGenerator
     {
         public const int BossesInWave = 1;
+        public const int FirstWaveNumber = 1;
 
-        // Зерно волны — зерно конфига × множитель + номер волны: у разных зёрен волны не совпадают, пока номер меньше него
-        private const int SeedMultiplier = 100003;
-
-        private const float MinDelayBetweenSpawns = 0.1f;
-        private const float MinRestTime = 0f;
-        private const float StartDelay = 0f;
-
-        private const int NoPathIndex = -1;
-
-        // Остаток, который уже дал врага, и вес, которому враги не положены, в дележе по наибольшему остатку
-        private const double UsedRemainder = -1d;
-        private const double NoWeightRemainder = double.NegativeInfinity;
-
-        private readonly EndlessModeConfig _config;
         private readonly List<PathNumber> _pathNumbers = new();
 
-        public EndlessWavesGenerator(EndlessModeConfig config, IReadOnlyList<RoadPath> roadPaths)
-        {
-            _config = config;
+        private readonly EndlessCycles _cycles;
+        private readonly EndlessWaveComposer _composer;
+        private readonly EndlessWaveArranger _arranger;
+        private readonly EndlessWaveJoints _joints;
 
+        // Разложенные волны по порядку, с первой; момент вызова известен для всех, кроме последней
+        private readonly List<EndlessWaveComposition> _compositions = new();
+        private readonly List<EndlessWaveArrangement> _arrangements = new();
+        private readonly List<float> _timesToSkip = new();
+
+        private readonly Dictionary<int, EnemiesWavesStageConfig> _stages = new();
+
+        public EndlessWavesGenerator(EndlessModeConfig config, IReadOnlyList<RoadPath> roadPaths, int seed)
+        {
             foreach (RoadPath roadPath in roadPaths)
             {
                 if (_pathNumbers.Contains(roadPath.Number) == false)
@@ -55,293 +45,100 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode
 
             if (_pathNumbers.Count == 0)
                 throw new ArgumentException("Для волн бесконечного режима на уровне нужна хотя бы одна дорога");
+
+            Seed = seed;
+
+            EndlessRandomStreams randomStreams = new(seed);
+
+            _cycles = new EndlessCycles(config, _pathNumbers.Count, randomStreams);
+            _composer = new EndlessWaveComposer(config, _cycles, randomStreams);
+            _arranger = new EndlessWaveArranger(config, _pathNumbers);
+            _joints = new EndlessWaveJoints(config.SafeCatchUpDistance, _pathNumbers.Count);
         }
 
-        // Номера всех дорог уровня: волна идёт по каждой
+        public int Seed { get; }
+
+        // Номера всех дорог уровня
         public IReadOnlyList<PathNumber> PathNumbers => _pathNumbers;
 
         public EnemiesWavesStageConfig Generate(int waveNumber)
         {
-            Random random = new Random(unchecked(_config.Seed * SeedMultiplier + waveNumber));
+            ValidateWaveNumber(waveNumber);
 
-            bool hasBoss = TryGetBoss(waveNumber, out MeleeConfig boss);
+            if (_stages.TryGetValue(waveNumber, out EnemiesWavesStageConfig cachedStage))
+                return cachedStage;
 
-            float enemiesCountValue = _config.EnemiesCount.GetValue(waveNumber);
+            ArrangeUpTo(waveNumber + 1);
 
-            if (hasBoss)
-                enemiesCountValue *= _config.BossWaveEnemiesShare;
+            EndlessWaveArrangement arrangement = _arrangements[waveNumber - FirstWaveNumber];
+            EnemiesWavesStageConfig stage = new(arrangement.Streams, arrangement.StageTime, _timesToSkip[waveNumber - FirstWaveNumber]);
 
-            int enemiesCount = Mathf.Max(0, Mathf.RoundToInt(enemiesCountValue));
-            float delayBetweenSpawns = Mathf.Max(MinDelayBetweenSpawns, _config.DelayBetweenSpawns.GetValue(waveNumber));
-            float restTime = Mathf.Max(MinRestTime, _config.RestTime.GetValue(waveNumber));
+            _stages.Add(waveNumber, stage);
 
-            List<WaveEnemyGroup> groups = ComposeGroups(waveNumber, enemiesCount, random);
-            List<List<WaveEnemyGroup>> pathsGroups = SplitByPaths(groups);
-
-            List<EnemiesWaveConfig> waves = new();
-            int bossPathIndex = NoPathIndex;
-
-            if (hasBoss)
-            {
-                bossPathIndex = GetBossPathIndex(waveNumber);
-
-                List<WaveEnemyGroup> bossGroups = new() { new WaveEnemyGroup(boss, BossesInWave) };
-
-                waves.Add(new EnemiesWaveConfig(bossGroups, _pathNumbers[bossPathIndex], PathLane.Center, StartDelay, delayBetweenSpawns));
-            }
-
-            for (int i = 0; i < _pathNumbers.Count; i++)
-            {
-                List<WaveEnemyGroup> pathGroups = pathsGroups[i];
-
-                if (pathGroups.Count == 0)
-                    continue;
-
-                // На дороге босса обычные враги выходят следом за ним, а не одновременно в той же точке
-                float startDelay = i == bossPathIndex ? delayBetweenSpawns : StartDelay;
-
-                waves.Add(new EnemiesWaveConfig(pathGroups, _pathNumbers[i], PathLane.Center, startDelay, delayBetweenSpawns));
-            }
-
-            float spawnDuration = GetSpawnDuration(waves);
-
-            return new EnemiesWavesStageConfig(waves, spawnDuration + restTime, spawnDuration);
+            return stage;
         }
 
         // Босс волны, если она боссовая: боссы идут по кругу, начиная с первого в списке
-        public bool TryGetBoss(int waveNumber, out MeleeConfig boss)
+        public bool TryGetBoss(int waveNumber, out EndlessBoss boss) => _composer.TryGetBoss(waveNumber, out boss);
+
+        // Сводка волны для инструментов редактора
+        public EndlessWavePlan GetPlan(int waveNumber)
         {
-            boss = null;
+            ValidateWaveNumber(waveNumber);
+            ArrangeUpTo(waveNumber + 1);
 
-            if (IsBossWave(waveNumber) == false)
-                return false;
+            int index = waveNumber - FirstWaveNumber;
+            EndlessWaveArrangement arrangement = _arrangements[index];
 
-            IReadOnlyList<MeleeConfig> bosses = _config.Bosses;
-
-            boss = bosses[GetBossOrdinal(waveNumber) % bosses.Count];
-
-            return boss != null;
+            return new EndlessWavePlan(_compositions[index], arrangement, _pathNumbers[arrangement.HeavyPathIndex], _timesToSkip[index]);
         }
 
-        private bool IsBossWave(int waveNumber)
+        private static void ValidateWaveNumber(int waveNumber)
         {
-            int bossWavesStep = _config.BossWavesStep;
-
-            return _config.Bosses.Count > 0 && bossWavesStep > 0 && waveNumber % bossWavesStep == 0;
+            if (waveNumber < FirstWaveNumber)
+                throw new ArgumentOutOfRangeException(nameof(waveNumber), waveNumber, "Волны нумеруются с единицы");
         }
 
-        // Порядковый номер боссовой волны с нуля: волна 10 — 0, волна 20 — 1
-        private int GetBossOrdinal(int waveNumber) => waveNumber / _config.BossWavesStep - 1;
-
-        // Дорога босса меняется от босса к боссу
-        private int GetBossPathIndex(int waveNumber) => GetBossOrdinal(waveNumber) % _pathNumbers.Count;
-
-        // Группы волны в порядке тиров, по группе на каждый выбранный вид
-        private List<WaveEnemyGroup> ComposeGroups(int waveNumber, int enemiesCount, Random random)
+        private void ArrangeUpTo(int wavesCount)
         {
-            IReadOnlyList<EndlessTier> tiers = _config.Tiers;
-
-            List<List<MeleeConfig>> tiersOpenEnemies = new();
-            double[] shares = new double[tiers.Count];
-
-            for (int i = 0; i < tiers.Count; i++)
-            {
-                List<MeleeConfig> openEnemies = GetOpenEnemies(tiers[i], waveNumber);
-
-                tiersOpenEnemies.Add(openEnemies);
-
-                // Тир без открытых врагов выпадает из дележа, и его доля сама расходится по остальным пропорционально
-                if (openEnemies.Count > 0)
-                    shares[i] = Mathf.Max(0f, tiers[i].Share.GetValue(waveNumber));
-            }
-
-            int[] tiersEnemiesCounts = DistributeByLargestRemainder(enemiesCount, shares);
-
-            List<WaveEnemyGroup> groups = new();
-
-            for (int i = 0; i < tiers.Count; i++)
-                AddTierGroups(groups, tiersOpenEnemies[i], tiers[i].KindsPerWave, tiersEnemiesCounts[i], random);
-
-            return groups;
+            while (_arrangements.Count < wavesCount)
+                ArrangeNextWave();
         }
 
-        private static List<MeleeConfig> GetOpenEnemies(EndlessTier tier, int waveNumber)
+        // Безопасные старты голов новой волны задают момент вызова прошлой — не раньше конца её спавна и не позже её
+        // конца — и задержки дорог: разрыв, который не уместился в передышку
+        private void ArrangeNextWave()
         {
-            List<MeleeConfig> openEnemies = new();
+            int waveNumber = FirstWaveNumber + _arrangements.Count;
+            EndlessWaveComposition composition = _composer.Compose(waveNumber);
+            int heavyPathIndex = _cycles.GetHeavyPathIndex(composition.Cycle);
+            float[] headSpeeds = _arranger.GetHeadSpeeds(composition, heavyPathIndex);
+            float[] pathsDelays = new float[_pathNumbers.Count];
 
-            foreach (EndlessTierEnemy tierEnemy in tier.Enemies)
+            if (_arrangements.Count > 0)
             {
-                if (tierEnemy.EnemyConfig != null && tierEnemy.FirstWave <= waveNumber)
-                    openEnemies.Add(tierEnemy.EnemyConfig);
-            }
+                EndlessWaveArrangement previous = _arrangements[_arrangements.Count - 1];
+                float latestSafeStart = 0f;
 
-            return openEnemies;
-        }
-
-        // Каждому — целая часть его квоты, остаток раздаётся по одному тем, у кого дробная часть больше
-        // (при равенстве — тому, кто раньше в списке). Сумма сходится с total.
-        private static int[] DistributeByLargestRemainder(int total, double[] weights)
-        {
-            int[] counts = new int[weights.Length];
-            double weightsSum = 0d;
-
-            foreach (double weight in weights)
-                weightsSum += weight;
-
-            if (total <= 0 || weightsSum <= 0d)
-                return counts;
-
-            double[] remainders = new double[weights.Length];
-            int distributedCount = 0;
-
-            for (int i = 0; i < weights.Length; i++)
-            {
-                double quota = total * weights[i] / weightsSum;
-
-                counts[i] = (int)Math.Floor(quota);
-                remainders[i] = weights[i] > 0d ? quota - counts[i] : NoWeightRemainder;
-                distributedCount += counts[i];
-            }
-
-            for (int leftCount = total - distributedCount; leftCount > 0; leftCount--)
-            {
-                int index = GetMaxIndex(remainders);
-
-                counts[index]++;
-                remainders[index] = UsedRemainder;
-            }
-
-            return counts;
-        }
-
-        private static int GetMaxIndex(double[] values)
-        {
-            int maxIndex = 0;
-
-            for (int i = 1; i < values.Length; i++)
-            {
-                if (values[i] > values[maxIndex])
-                    maxIndex = i;
-            }
-
-            return maxIndex;
-        }
-
-        // Виды тира на волну — случайные из открытых, сколько разрешает тир. Враги тира делятся между ними поровну,
-        // остаток — первым по жребию. Группы идут в порядке врагов в тире.
-        private static void AddTierGroups(
-            List<WaveEnemyGroup> groups,
-            List<MeleeConfig> openEnemies,
-            int kindsPerWave,
-            int tierEnemiesCount,
-            Random random)
-        {
-            if (tierEnemiesCount <= 0 || openEnemies.Count == 0)
-                return;
-
-            int kindsCount = Mathf.Min(kindsPerWave, openEnemies.Count, tierEnemiesCount);
-            List<int> pickedIndices = PickRandomIndices(openEnemies.Count, kindsCount, random);
-
-            int[] kindsEnemiesCounts = new int[openEnemies.Count];
-            int baseCount = tierEnemiesCount / kindsCount;
-            int extraCount = tierEnemiesCount % kindsCount;
-
-            for (int i = 0; i < pickedIndices.Count; i++)
-                kindsEnemiesCounts[pickedIndices[i]] = i < extraCount ? baseCount + 1 : baseCount;
-
-            for (int i = 0; i < openEnemies.Count; i++)
-            {
-                if (kindsEnemiesCounts[i] > 0)
-                    groups.Add(new WaveEnemyGroup(openEnemies[i], kindsEnemiesCounts[i]));
-            }
-        }
-
-        // Частичное перемешивание Фишера — Йетса: первые pickCount индексов в случайном порядке
-        private static List<int> PickRandomIndices(int count, int pickCount, Random random)
-        {
-            List<int> indices = new(count);
-
-            for (int i = 0; i < count; i++)
-                indices.Add(i);
-
-            for (int i = 0; i < pickCount; i++)
-            {
-                int swapIndex = random.Next(i, count);
-
-                (indices[i], indices[swapIndex]) = (indices[swapIndex], indices[i]);
-            }
-
-            indices.RemoveRange(pickCount, count - pickCount);
-
-            return indices;
-        }
-
-        // Каждая группа делится между дорогами поровну. Остаток раздаётся по очереди, и очередь идёт сквозь все группы
-        // волны: лишние враги разных групп не скапливаются на первой дороге.
-        private List<List<WaveEnemyGroup>> SplitByPaths(List<WaveEnemyGroup> groups)
-        {
-            int pathsCount = _pathNumbers.Count;
-            List<List<WaveEnemyGroup>> pathsGroups = new();
-
-            for (int i = 0; i < pathsCount; i++)
-                pathsGroups.Add(new List<WaveEnemyGroup>());
-
-            int nextPathIndex = 0;
-
-            foreach (WaveEnemyGroup group in groups)
-            {
-                int[] pathsEnemiesCounts = new int[pathsCount];
-                int baseCount = group.Count / pathsCount;
-                int extraCount = group.Count % pathsCount;
-
-                for (int i = 0; i < pathsCount; i++)
-                    pathsEnemiesCounts[i] = baseCount;
-
-                for (int i = 0; i < extraCount; i++)
+                for (int i = 0; i < pathsDelays.Length; i++)
                 {
-                    pathsEnemiesCounts[nextPathIndex]++;
-                    nextPathIndex = (nextPathIndex + 1) % pathsCount;
+                    float safeStart = _joints.GetSafeStart(i, headSpeeds[i]);
+
+                    latestSafeStart = Mathf.Max(latestSafeStart, safeStart);
+                    pathsDelays[i] = Mathf.Max(0f, safeStart - previous.StageTime);
                 }
 
-                for (int i = 0; i < pathsCount; i++)
-                {
-                    if (pathsEnemiesCounts[i] > 0)
-                        pathsGroups[i].Add(new WaveEnemyGroup(group.EnemyConfig, pathsEnemiesCounts[i]));
-                }
+                float timeToSkip = Mathf.Min(previous.StageTime, Mathf.Max(previous.SpawnEnd, latestSafeStart));
+
+                _timesToSkip.Add(timeToSkip);
+                _joints.MoveToNextWave(timeToSkip);
             }
 
-            return pathsGroups;
-        }
+            EndlessWaveArrangement arrangement = _arranger.Arrange(composition, heavyPathIndex, pathsDelays);
 
-        private static int CountEnemies(IReadOnlyList<WaveEnemyGroup> groups)
-        {
-            int count = 0;
-
-            foreach (WaveEnemyGroup group in groups)
-                count += group.Count;
-
-            return count;
-        }
-
-        // Спавн волны идёт, пока не выйдет последний враг самого позднего потока: первый враг потока выходит после
-        // задержки старта, каждый следующий — через интервал
-        private static float GetSpawnDuration(List<EnemiesWaveConfig> waves)
-        {
-            float spawnDuration = 0f;
-
-            foreach (EnemiesWaveConfig wave in waves)
-            {
-                int enemiesCount = CountEnemies(wave.EnemyGroups);
-
-                if (enemiesCount == 0)
-                    continue;
-
-                float waveSpawnDuration = wave.StartDelay + (enemiesCount - 1) * wave.DelayBetweenSpawns;
-
-                spawnDuration = Mathf.Max(spawnDuration, waveSpawnDuration);
-            }
-
-            return spawnDuration;
+            _joints.AddTails(arrangement.PathsTails);
+            _compositions.Add(composition);
+            _arrangements.Add(arrangement);
         }
     }
 }

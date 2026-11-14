@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 using System;
+using System.Globalization;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Weather;
 using UnityEditor;
 using UnityEngine;
@@ -14,6 +15,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode
     {
         private const string StartWaveNumberPrefsKey = "KingdomStandTD.EndlessMode.StartWaveNumber";
         private const string ForcedWeatherPrefsKey = "KingdomStandTD.EndlessMode.ForcedWeather";
+        private const string RunSeedPrefsKey = "KingdomStandTD.EndlessMode.RunSeed";
 
         private const int NoForcedWeather = -1;
 
@@ -38,6 +40,27 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode
             }
 
             set => EditorPrefs.SetInt(ForcedWeatherPrefsKey, value.HasValue ? (int)value.Value : NoForcedWeather);
+        }
+
+        // Зерно забега в редакторе — для повтора прогона по зерну из лога; null — случайное, как в сборке
+        public static int? RunSeed
+        {
+            get
+            {
+                string value = EditorPrefs.GetString(RunSeedPrefsKey, string.Empty);
+
+                if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int seed))
+                    return seed;
+
+                return null;
+            }
+
+            set
+            {
+                string text = value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
+
+                EditorPrefs.SetString(RunSeedPrefsKey, text);
+            }
         }
 
         private static int ClampWaveNumber(int waveNumber) => Mathf.Max(EndlessStagesSource.DefaultFirstWaveNumber, waveNumber);

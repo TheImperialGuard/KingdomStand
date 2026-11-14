@@ -32,6 +32,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode
 
         public int FirstNumber { get; }
 
+        // Зерно забега, по которому генератор собирает волны
+        public int Seed => _generator.Seed;
+
         public int Count => throw new NotSupportedException("У бесконечного режима нет числа волн");
 
         public bool Has(int stageNumber) => stageNumber >= FirstNumber;

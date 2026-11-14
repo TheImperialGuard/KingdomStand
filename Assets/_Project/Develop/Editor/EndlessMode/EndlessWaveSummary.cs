@@ -1,144 +1,155 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
-using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
-using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Stages;
+using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
 using Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode;
 
 namespace Assets._Project.Develop.Editor.EndlessMode
 {
     // Строка таблицы волн в инспекторе режима: что генератор собрал для одной волны. Виды врагов — по именам ассетов
-    // (у волков нет CharacterName), в порядке тиров. Босс боссовой волны — отдельно: в число врагов и состав он не
-    // входит, поэтому видно, насколько урезана волна.
+    // (у волков нет CharacterName), в порядке тиров. Босс и его сопровождение — отдельно: в счёт тиров они не входят.
     public class EndlessWaveSummary
     {
-        private const int NotFoundIndex = -1;
         private const string KindsSeparator = ", ";
+        private const string NoAccentText = "—";
+        private const string UnprotectedAccentText = "без защиты";
+        private const string PhysicAccentText = "броня";
+        private const string MagicAccentText = "маг.";
 
         private EndlessWaveSummary(
             int waveNumber,
             int enemiesCount,
             IReadOnlyList<int> tiersEnemiesCounts,
+            int bossEscortCount,
             string composition,
             string bossName,
+            float budget,
+            float strength,
+            string heavyPath,
+            string lightAccent,
+            string heavyAccent,
             float healthMultiplier,
-            float spawnDuration,
+            IReadOnlyList<float> pathsDelays,
+            float timeToSkip,
             float waveDuration)
         {
             WaveNumber = waveNumber;
             EnemiesCount = enemiesCount;
             TiersEnemiesCounts = tiersEnemiesCounts;
+            BossEscortCount = bossEscortCount;
             Composition = composition;
             BossName = bossName;
+            Budget = budget;
+            Strength = strength;
+            HeavyPath = heavyPath;
+            LightAccent = lightAccent;
+            HeavyAccent = heavyAccent;
             HealthMultiplier = healthMultiplier;
-            SpawnDuration = spawnDuration;
+            PathsDelays = pathsDelays;
+            TimeToSkip = timeToSkip;
             WaveDuration = waveDuration;
         }
 
         public int WaveNumber { get; }
+
+        // Все враги волны, кроме самого босса: тиры и сопровождение
         public int EnemiesCount { get; }
         public IReadOnlyList<int> TiersEnemiesCounts { get; }
+        public int BossEscortCount { get; }
         public string Composition { get; }
         public string BossName { get; }
+        public float Budget { get; }
+        public float Strength { get; }
+        public string HeavyPath { get; }
+        public string LightAccent { get; }
+        public string HeavyAccent { get; }
+
+        // Множитель здоровья обычных врагов волны
         public float HealthMultiplier { get; }
-        public float SpawnDuration { get; }
+
+        // В порядке EndlessWavesGenerator.PathNumbers
+        public IReadOnlyList<float> PathsDelays { get; }
+        public float TimeToSkip { get; }
         public float WaveDuration { get; }
 
-        // boss — босс волны по генератору, null — волна не боссовая
-        public static EndlessWaveSummary Create(
-            int waveNumber,
-            EnemiesWavesStageConfig wave,
-            MeleeConfig boss,
-            EndlessModeConfig config)
+        public static EndlessWaveSummary Create(EndlessWavePlan plan, EndlessModeConfig config)
         {
-            Dictionary<CharacterConfig, int> kindsCounts = new();
+            int[] tiersEnemiesCounts = new int[config.Tiers.Count];
 
-            foreach (EnemiesWaveConfig stream in wave.EnemiesWaveConfigs)
+            foreach (EndlessWaveKind kind in plan.Kinds)
+                tiersEnemiesCounts[kind.TierIndex] += kind.Count;
+
+            IEnumerable<string> kinds = plan.Kinds
+                .OrderBy(kind => kind.TierIndex)
+                .ThenBy(kind => GetIndexInTier(kind, config))
+                .Select(kind => $"{kind.Enemy.name} ×{kind.Count}");
+
+            int bossEscortCount = 0;
+            string bossName = string.Empty;
+
+            if (plan.Boss != null)
             {
-                foreach (WaveEnemyGroup group in stream.EnemyGroups)
+                bossName = plan.Boss.Boss.name;
+
+                foreach (EndlessEscortGroup escortGroup in plan.Boss.Escort)
                 {
-                    kindsCounts.TryGetValue(group.EnemyConfig, out int count);
-                    kindsCounts[group.EnemyConfig] = count + group.Count;
+                    if (escortGroup.Enemy == null)
+                        continue;
+
+                    int escortCount = escortGroup.GroupSize * escortGroup.GroupsCount;
+
+                    bossEscortCount += escortCount;
+                    kinds = kinds.Append($"сопровождение {escortGroup.Enemy.name} ×{escortCount}");
                 }
             }
 
-            if (boss != null)
-                RemoveBoss(kindsCounts, boss);
-
-            int[] tiersEnemiesCounts = new int[config.Tiers.Count];
-            int enemiesCount = 0;
-
-            foreach (KeyValuePair<CharacterConfig, int> kindCount in kindsCounts)
-            {
-                int tierIndex = GetTierIndex(kindCount.Key, config);
-
-                if (tierIndex != NotFoundIndex)
-                    tiersEnemiesCounts[tierIndex] += kindCount.Value;
-
-                enemiesCount += kindCount.Value;
-            }
-
-            IEnumerable<string> kinds = kindsCounts
-                .OrderBy(kindCount => GetTierIndex(kindCount.Key, config))
-                .ThenBy(kindCount => GetIndexInTier(kindCount.Key, config))
-                .Select(kindCount => $"{kindCount.Key.name} ×{kindCount.Value}");
-
-            string composition = string.Join(KindsSeparator, kinds);
-            string bossName = boss != null ? boss.name : string.Empty;
-
             return new EndlessWaveSummary(
-                waveNumber,
-                enemiesCount,
+                plan.WaveNumber,
+                tiersEnemiesCounts.Sum() + bossEscortCount,
                 tiersEnemiesCounts,
-                composition,
+                bossEscortCount,
+                string.Join(KindsSeparator, kinds),
                 bossName,
-                config.HealthMultiplier.GetValue(waveNumber),
-                wave.TimeToSkipStage,
-                wave.StageTime);
+                plan.Budget,
+                plan.Strength,
+                plan.HeavyPathNumber.ToString(),
+                FormatAccent(plan.LightAccent),
+                FormatAccent(plan.HeavyAccent),
+                config.HealthMultiplier.GetValue(plan.WaveNumber),
+                plan.PathsDelays,
+                plan.TimeToSkip,
+                plan.StageTime);
         }
 
-        // Тот же вид может стоять и в тире — тогда из счёта уходит только сам босс
-        private static void RemoveBoss(Dictionary<CharacterConfig, int> kindsCounts, MeleeConfig boss)
+        public static string FormatAccent(DamageTypes? accent)
         {
-            int count = kindsCounts[boss] - EndlessWavesGenerator.BossesInWave;
+            if (accent.HasValue == false)
+                return NoAccentText;
 
-            if (count > 0)
-                kindsCounts[boss] = count;
-            else
-                kindsCounts.Remove(boss);
-        }
-
-        private static int GetTierIndex(CharacterConfig enemyConfig, EndlessModeConfig config)
-        {
-            for (int i = 0; i < config.Tiers.Count; i++)
+            switch (accent.Value)
             {
-                if (IndexOf(config.Tiers[i], enemyConfig) != NotFoundIndex)
+                case DamageTypes.Physic:
+                    return PhysicAccentText;
+
+                case DamageTypes.Magic:
+                    return MagicAccentText;
+
+                default:
+                    return UnprotectedAccentText;
+            }
+        }
+
+        private static int GetIndexInTier(EndlessWaveKind kind, EndlessModeConfig config)
+        {
+            IReadOnlyList<EndlessTierEnemy> enemies = config.Tiers[kind.TierIndex].Enemies;
+
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                if (enemies[i].EnemyConfig == kind.Enemy)
                     return i;
             }
 
-            return NotFoundIndex;
-        }
-
-        private static int GetIndexInTier(CharacterConfig enemyConfig, EndlessModeConfig config)
-        {
-            int tierIndex = GetTierIndex(enemyConfig, config);
-
-            if (tierIndex == NotFoundIndex)
-                return NotFoundIndex;
-
-            return IndexOf(config.Tiers[tierIndex], enemyConfig);
-        }
-
-        private static int IndexOf(EndlessTier tier, CharacterConfig enemyConfig)
-        {
-            for (int i = 0; i < tier.Enemies.Count; i++)
-            {
-                if (tier.Enemies[i].EnemyConfig == enemyConfig)
-                    return i;
-            }
-
-            return NotFoundIndex;
+            return enemies.Count;
         }
     }
 }

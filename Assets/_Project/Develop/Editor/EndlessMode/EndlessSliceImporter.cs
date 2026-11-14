@@ -18,8 +18,10 @@ namespace Assets._Project.Develop.Editor.EndlessMode
     public static class EndlessSliceImporter
     {
         private const int MinWaveNumber = 1;
-        private const int MinKindsPerWave = 1;
+        private const int MinCount = 1;
         private const int MinBossWavesStep = 1;
+        private const float MinThemeWeight = 1f;
+        private const float MinSpacing = 0.1f;
         private const int MinEnemiesToSkipWave = 0;
         private const float MinShare = 0f;
         private const float MaxShare = 1f;
@@ -122,22 +124,38 @@ namespace Assets._Project.Develop.Editor.EndlessMode
         // инспектор не дал бы ввести, и враги по имени
         private static void CheckSettings(EndlessSettingsSlice settings, LevelSliceEnemies enemies, LevelSliceImportResult result)
         {
-            CheckTable(settings.EnemiesCount, "enemiesCount", result);
-            CheckTable(settings.DelayBetweenSpawns, "delayBetweenSpawns", result);
+            CheckTable(settings.WaveBudget, "waveBudget", result);
+            CheckTable(settings.SpawnTime, "spawnTime", result);
             CheckTable(settings.RestTime, "restTime", result);
             CheckTable(settings.HealthMultiplier, "healthMultiplier", result);
+            CheckTable(settings.BossHealthMultiplier, "bossHealthMultiplier", result);
+
+            for (int i = 0; i < settings.CycleStrength.Count; i++)
+            {
+                if (settings.CycleStrength[i] < 0f)
+                    result.Errors.Add($"cycleStrength[{i}]: {settings.CycleStrength[i]}, нужно не меньше 0");
+            }
 
             for (int i = 0; i < settings.Tiers.Count; i++)
                 CheckTier(settings.Tiers[i], $"tiers[{i}]", enemies, result);
 
             for (int i = 0; i < settings.Bosses.Count; i++)
-                CheckEnemy(settings.Bosses[i], $"bosses[{i}]", enemies, result);
+                CheckBoss(settings.Bosses[i], $"bosses[{i}]", enemies, result);
+
+            if (settings.ThemeWeight < MinThemeWeight)
+                result.Errors.Add($"themeWeight: {settings.ThemeWeight}, нужно не меньше {MinThemeWeight}");
+
+            if (settings.MinSpacing < MinSpacing)
+                result.Errors.Add($"minSpacing: {settings.MinSpacing}, нужно не меньше {MinSpacing}");
+
+            if (settings.SafeCatchUpDistance < 0f)
+                result.Errors.Add($"safeCatchUpDistance: {settings.SafeCatchUpDistance}, нужно не меньше 0");
 
             if (settings.BossWavesStep < MinBossWavesStep)
                 result.Errors.Add($"bossWavesStep: {settings.BossWavesStep}, нужно не меньше {MinBossWavesStep}");
 
-            if (settings.BossWaveEnemiesShare < MinShare || settings.BossWaveEnemiesShare > MaxShare)
-                result.Errors.Add($"bossWaveEnemiesShare: {settings.BossWaveEnemiesShare}, нужно от {MinShare} до {MaxShare}");
+            if (settings.BossWaveBudgetShare < MinShare || settings.BossWaveBudgetShare > MaxShare)
+                result.Errors.Add($"bossWaveBudgetShare: {settings.BossWaveBudgetShare}, нужно от {MinShare} до {MaxShare}");
 
             if (settings.MaxEnemiesToSkipWave < MinEnemiesToSkipWave)
                 result.Errors.Add($"maxEnemiesToSkipWave: {settings.MaxEnemiesToSkipWave}, нужно не меньше {MinEnemiesToSkipWave}");
@@ -152,9 +170,8 @@ namespace Assets._Project.Develop.Editor.EndlessMode
             }
 
             CheckTable(tier.Share, $"{path}.share", result);
-
-            if (tier.KindsPerWave < MinKindsPerWave)
-                result.Errors.Add($"{path}.kindsPerWave: {tier.KindsPerWave}, нужно не меньше {MinKindsPerWave}");
+            CheckTable(tier.KindsPerWave, $"{path}.kindsPerWave", result);
+            CheckTable(tier.GroupSize, $"{path}.groupSize", result);
 
             for (int i = 0; i < tier.Enemies.Count; i++)
             {
@@ -171,6 +188,48 @@ namespace Assets._Project.Develop.Editor.EndlessMode
 
                 if (tierEnemy.FirstWave < MinWaveNumber)
                     result.Errors.Add($"{enemyPath}.firstWave: {tierEnemy.FirstWave}, нужно не меньше {MinWaveNumber}");
+
+                if (tierEnemy.LastWave < EndlessTierEnemy.NoLastWave)
+                    result.Errors.Add($"{enemyPath}.lastWave: {tierEnemy.LastWave}, нужно не меньше {EndlessTierEnemy.NoLastWave}");
+
+                if (tierEnemy.Price <= 0f)
+                    result.Errors.Add($"{enemyPath}.price: {tierEnemy.Price}, нужно больше 0");
+
+                CheckTable(tierEnemy.MaxPerWave, $"{enemyPath}.maxPerWave", result);
+            }
+        }
+
+        private static void CheckBoss(EndlessBossSlice boss, string path, LevelSliceEnemies enemies, LevelSliceImportResult result)
+        {
+            if (boss == null)
+            {
+                result.Errors.Add($"{path}: пустой босс");
+                return;
+            }
+
+            CheckEnemy(boss.Boss, $"{path}.boss", enemies, result);
+
+            for (int i = 0; i < boss.Escort.Count; i++)
+            {
+                EndlessEscortGroupSlice escortGroup = boss.Escort[i];
+                string groupPath = $"{path}.escort[{i}]";
+
+                if (escortGroup == null)
+                {
+                    result.Errors.Add($"{groupPath}: пустой элемент");
+                    continue;
+                }
+
+                CheckEnemy(escortGroup.Enemy, groupPath, enemies, result);
+
+                if (escortGroup.GroupSize < MinCount)
+                    result.Errors.Add($"{groupPath}.groupSize: {escortGroup.GroupSize}, нужно не меньше {MinCount}");
+
+                if (escortGroup.GroupsCount < MinCount)
+                    result.Errors.Add($"{groupPath}.groupsCount: {escortGroup.GroupsCount}, нужно не меньше {MinCount}");
+
+                if (escortGroup.FirstDelay < 0f || escortGroup.Period < 0f)
+                    result.Errors.Add($"{groupPath}: задержка и период — не меньше 0");
             }
         }
 
@@ -250,8 +309,8 @@ namespace Assets._Project.Develop.Editor.EndlessMode
                 LevelStats newStats = CalculateStats(levelCopy, newGenerator, prefab, gameConfig);
 
                 // Множитель здоровья в статистике не виден: она считает здоровье врагов по их конфигам
-                List<float> currentHealths = EndlessEditorWaves.CalculateHealthWithMultiplier(currentStats, config);
-                List<float> newHealths = EndlessEditorWaves.CalculateHealthWithMultiplier(newStats, configCopy);
+                List<float> currentHealths = CalculateHealthWithMultiplier(currentStats, config);
+                List<float> newHealths = EndlessEditorWaves.CalculateHealthWithMultiplier(newStats, newGenerator, configCopy);
 
                 result.AnalysisChanges.AddRange(LevelStatsComparer.Compare(currentStats, newStats));
                 result.AnalysisChanges.AddRange(LevelStatsComparer.CompareStageValues(HealthWithMultiplierLabel, currentHealths, newHealths));
@@ -270,6 +329,14 @@ namespace Assets._Project.Develop.Editor.EndlessMode
                 return new LevelStats();
 
             return CalculateStats(level, generator, prefab, gameConfig);
+        }
+
+        private static List<float> CalculateHealthWithMultiplier(LevelStats stats, EndlessModeConfig config)
+        {
+            if (EndlessEditorWaves.TryCreateGenerator(config, new List<LevelIssue>(), out EndlessWavesGenerator generator) == false)
+                return new List<float>();
+
+            return EndlessEditorWaves.CalculateHealthWithMultiplier(stats, generator, config);
         }
 
         private static LevelStats CalculateStats(

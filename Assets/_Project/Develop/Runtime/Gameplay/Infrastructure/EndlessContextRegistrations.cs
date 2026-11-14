@@ -70,7 +70,13 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
         }
 
         private static EndlessWavesGenerator CreateEndlessWavesGenerator(DIContainer c)
-            => new(GetConfig(c), c.Resolve<Level>().RoadPaths);
+        {
+            int seed = GetRunSeed();
+
+            Debug.Log($"Забег бесконечного режима: зерно {seed}");
+
+            return new EndlessWavesGenerator(GetConfig(c), c.Resolve<Level>().RoadPaths, seed);
+        }
 
         private static EndlessStagesSource CreateEndlessStagesSource(DIContainer c)
             => new(c.Resolve<EndlessWavesGenerator>(), GetFirstWaveNumber());
@@ -91,8 +97,13 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
                     AddDistinct(enemies, tierEnemy.EnemyConfig);
             }
 
-            foreach (MeleeConfig boss in config.Bosses)
-                AddDistinct(enemies, boss);
+            foreach (EndlessBoss boss in config.Bosses)
+            {
+                AddDistinct(enemies, boss.Boss);
+
+                foreach (EndlessEscortGroup escortGroup in boss.Escort)
+                    AddDistinct(enemies, escortGroup.Enemy);
+            }
 
             return new LevelStagesContent(enemies, c.Resolve<EndlessWavesGenerator>().PathNumbers);
         }
@@ -187,6 +198,19 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
             #else
                 return EndlessStagesSource.DefaultFirstWaveNumber;
             #endif
+        }
+
+        // Зерно забега — случайное на каждый забег; в редакторе его можно задать для повтора прогона
+        private static int GetRunSeed()
+        {
+            #if UNITY_EDITOR
+                int? editorSeed = EndlessModeEditorSettings.RunSeed;
+
+                if (editorSeed.HasValue)
+                    return editorSeed.Value;
+            #endif
+
+            return new Random().Next();
         }
 
         private static WeatherKinds? GetForcedWeather()

@@ -78,6 +78,12 @@ namespace Assets._Project.Develop.Editor.LevelEditor
                 property.floatValue = value;
         }
 
+        public static void SetBool(SerializedProperty property, bool value)
+        {
+            if (property.boolValue != value)
+                property.boolValue = value;
+        }
+
         public static void SetString(SerializedProperty property, string value)
         {
             string newValue = value ?? string.Empty;

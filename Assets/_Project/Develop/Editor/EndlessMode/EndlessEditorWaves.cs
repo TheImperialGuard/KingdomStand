@@ -11,11 +11,11 @@ using UnityEngine;
 namespace Assets._Project.Develop.Editor.EndlessMode
 {
     // Волны бесконечного режима для инструментов редактора — срез, импорт среза и плейтест из окна редактора уровней. Их
-    // собирает тот же генератор, что в игре, по дорогам префаба уровня режима, поэтому это ровно те волны, что выйдут в
-    // бою. Волны нумеруются с единицы.
+    // собирает тот же генератор, что в игре, по дорогам префаба уровня режима и по зерну-образцу конфига, поэтому это
+    // ровно те волны, что выйдут в бою с этим зерном. Волны нумеруются с единицы.
     public static class EndlessEditorWaves
     {
-        public const int FirstWaveNumber = 1;
+        public const int FirstWaveNumber = EndlessWavesGenerator.FirstWaveNumber;
 
         // Префаб так же, как его грузит игра: Resources.Load по LevelConfig.PrefabPath.
         public static Level LoadLevelPrefab(EndlessModeConfig config)
@@ -40,7 +40,7 @@ namespace Assets._Project.Develop.Editor.EndlessMode
                 return false;
             }
 
-            generator = new EndlessWavesGenerator(config, levelPrefab.RoadPaths);
+            generator = new EndlessWavesGenerator(config, levelPrefab.RoadPaths, config.Seed);
 
             return true;
         }
@@ -66,15 +66,29 @@ namespace Assets._Project.Develop.Editor.EndlessMode
             return LevelStatsCalculator.Calculate(level, waves, hasLastStage: false, prefab, gameConfig);
         }
 
-        // Здоровье врагов каждой посчитанной волны с множителем её номера
-        public static List<float> CalculateHealthWithMultiplier(LevelStats stats, EndlessModeConfig config)
+        // Здоровье врагов каждой посчитанной волны с множителями её номера: у обычных врагов — с общим, у босса — со своим
+        public static List<float> CalculateHealthWithMultiplier(LevelStats stats, EndlessWavesGenerator generator, EndlessModeConfig config)
         {
             List<float> healths = new();
 
             for (int i = 0; i < stats.Stages.Count; i++)
-                healths.Add(stats.Stages[i].Health * config.HealthMultiplier.GetValue(FirstWaveNumber + i));
+            {
+                int waveNumber = FirstWaveNumber + i;
+                float bossHealth = generator.TryGetBoss(waveNumber, out EndlessBoss boss) ? boss.Boss.MaxHealth : 0f;
+
+                healths.Add(ApplyMultipliers(stats.Stages[i].Health, bossHealth, waveNumber, config));
+            }
 
             return healths;
+        }
+
+        // Величина волны с множителями: часть босса — с множителем боссов, остальное — с множителем волны
+        public static float ApplyMultipliers(float waveValue, float bossValue, int waveNumber, EndlessModeConfig config)
+        {
+            float multiplier = config.HealthMultiplier.GetValue(waveNumber);
+            float bossMultiplier = config.BossHealthMultiplier.GetValue(waveNumber);
+
+            return (waveValue - bossValue) * multiplier + bossValue * bossMultiplier;
         }
 
         // Золото к началу волны без скипов, будто враги прошлых волн убиты, — как goldAtStartWithoutSkips в срезе.

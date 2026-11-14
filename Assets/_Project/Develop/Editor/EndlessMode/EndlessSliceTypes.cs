@@ -7,35 +7,51 @@ using Newtonsoft.Json;
 namespace Assets._Project.Develop.Editor.EndlessMode
 {
     // Блок endless среза бесконечного уровня — настройки EndlessModeConfig, по которым генератор собирает волны.
-    // Импортируется целиком. Враги — имена ассетов MeleeConfig; null — пустой элемент списка.
+    // Импортируется целиком. Враги — имена ассетов MeleeConfig; null — пустой элемент списка. seed — зерно-образец:
+    // по нему собраны волны среза, забег в игре берёт своё.
     public class EndlessSettingsSlice
     {
         [JsonProperty(Required = Required.Always)]
         public int Seed { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public WaveValueTableSlice EnemiesCount { get; set; }
+        public WaveValueTableSlice WaveBudget { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public List<EndlessTierSlice> Tiers { get; set; } = new();
+        public List<float> CycleStrength { get; set; } = new();
 
         [JsonProperty(Required = Required.Always)]
-        public WaveValueTableSlice DelayBetweenSpawns { get; set; }
+        public WaveValueTableSlice SpawnTime { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public WaveValueTableSlice RestTime { get; set; }
 
         [JsonProperty(Required = Required.Always)]
+        public List<EndlessTierSlice> Tiers { get; set; } = new();
+
+        [JsonProperty(Required = Required.Always)]
+        public float ThemeWeight { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public float MinSpacing { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public float SafeCatchUpDistance { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
         public int BossWavesStep { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public List<string> Bosses { get; set; } = new();
+        public List<EndlessBossSlice> Bosses { get; set; } = new();
 
         [JsonProperty(Required = Required.Always)]
-        public float BossWaveEnemiesShare { get; set; }
+        public float BossWaveBudgetShare { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public WaveValueTableSlice HealthMultiplier { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public WaveValueTableSlice BossHealthMultiplier { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public int MaxEnemiesToSkipWave { get; set; }
@@ -68,15 +84,22 @@ namespace Assets._Project.Develop.Editor.EndlessMode
         public string Name { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public int KindsPerWave { get; set; }
+        public EndlessRoadRoles Road { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public WaveValueTableSlice Share { get; set; }
 
         [JsonProperty(Required = Required.Always)]
+        public WaveValueTableSlice KindsPerWave { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public WaveValueTableSlice GroupSize { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
         public List<EndlessTierEnemySlice> Enemies { get; set; } = new();
     }
 
+    // lastWave 0 — без конца; maxPerWave с пустыми keys — без потолка.
     public class EndlessTierEnemySlice
     {
         [JsonProperty(Required = Required.AllowNull)]
@@ -84,6 +107,45 @@ namespace Assets._Project.Develop.Editor.EndlessMode
 
         [JsonProperty(Required = Required.Always)]
         public int FirstWave { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public int LastWave { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public float Price { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public WaveValueTableSlice MaxPerWave { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public bool SpawnsLast { get; set; }
+    }
+
+    public class EndlessBossSlice
+    {
+        [JsonProperty(Required = Required.AllowNull)]
+        public string Boss { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public List<EndlessEscortGroupSlice> Escort { get; set; } = new();
+    }
+
+    public class EndlessEscortGroupSlice
+    {
+        [JsonProperty(Required = Required.AllowNull)]
+        public string Enemy { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public int GroupSize { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public float FirstDelay { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public float Period { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public int GroupsCount { get; set; }
     }
 
     // Блок weather — справочно: правила погоды из WeatherConfig. Погода не зависит от зерна, поэтому в волны среза не
@@ -118,11 +180,30 @@ namespace Assets._Project.Develop.Editor.EndlessMode
         public DamageTypes DamageType { get; set; }
     }
 
-    // Добавки бесконечного режима к analysis волны (стейджа среза): здоровье — с множителем её волны, босс — отдельно
-    // от счёта тиров.
+    // Добавки бесконечного режима к analysis волны (стейджа среза). Здоровье — с множителем её волны, у босса — со своим.
+    // Сила — сумма цен вышедших врагов, она сходится с бюджетом. heavyPath — тяжёлая дорога цикла; accent — акценты
+    // лёгкой и тяжёлой части (null — без акцента, None — виды без защиты). pathsDelays — задержка первого звена дороги
+    // (разрыв на стыке, не уместившийся в передышку), timeToSkip — с какой секунды открывается вызов следующей волны.
     public class EndlessStageAnalysis
     {
+        public int Cycle { get; set; }
+        public string HeavyPath { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Include)]
+        public DamageTypes? LightAccent { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Include)]
+        public DamageTypes? HeavyAccent { get; set; }
+
+        public float Budget { get; set; }
+        public float Strength { get; set; }
+        public Dictionary<string, float> PathsDelays { get; set; } = new();
+        public float TimeToSkip { get; set; }
         public float HealthMultiplier { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public float? BossHealthMultiplier { get; set; }
+
         public float HealthWithMultiplier { get; set; }
         public float EffectiveHealthPhysicWithMultiplier { get; set; }
         public float EffectiveHealthMagicWithMultiplier { get; set; }
@@ -130,8 +211,11 @@ namespace Assets._Project.Develop.Editor.EndlessMode
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string Boss { get; set; }
 
-        // Ключ — имя тира, порядок — порядок тиров в конфиге
+        // Ключ — имя тира, порядок — порядок тиров в конфиге. Сопровождение босса — отдельно
         public Dictionary<string, int> EnemiesByTier { get; set; } = new();
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? BossEscortCount { get; set; }
     }
 
     // Добавка к analysis потока (волны среза).

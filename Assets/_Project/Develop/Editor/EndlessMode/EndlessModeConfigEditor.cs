@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Assets._Project.Develop.Editor.LevelEditor;
 using Assets._Project.Develop.Editor.LevelEditor.Window;
-using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Characters;
-using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
 using Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Level;
@@ -25,7 +24,11 @@ namespace Assets._Project.Develop.Editor.EndlessMode
         private const string WavesCountPrefsKey = "KingdomStandTD.EndlessModeConfigEditor.WavesCount";
         private const string TimeFormat = "0.0";
         private const string MultiplierFormat = "0.00";
+        private const string StrengthFormat = "0";
         private const string IssuesSeparator = "\n";
+        private const string DelaysSeparator = " / ";
+        private const string RunSeedTooltip = "Зерно забега в редакторе — для повтора прогона по зерну из лога плейтеста. "
+            + "Пусто — случайное";
 
         private const int FirstWaveNumber = 1;
         private const int DefaultWavesCount = 40;
@@ -39,6 +42,10 @@ namespace Assets._Project.Develop.Editor.EndlessMode
         private const float BossColumnWidth = 84f;
         private const float MultiplierColumnWidth = 56f;
         private const float TimeColumnWidth = 60f;
+        private const float StrengthColumnWidth = 96f;
+        private const float PathColumnWidth = 60f;
+        private const float AccentColumnWidth = 120f;
+        private const float DelaysColumnWidth = 84f;
 
         // Состав делит с остальными столбцами то, что осталось от ширины инспектора; уже этого его не сжимать — таблица
         // уйдёт в горизонтальную прокрутку
@@ -49,6 +56,7 @@ namespace Assets._Project.Develop.Editor.EndlessMode
         private static readonly Color EvenRowBackground = new(1f, 1f, 1f, 0.04f);
 
         private HelpBox _startWaveBox;
+        private HelpBox _runSeedBox;
         private HelpBox _issuesBox;
         private VisualElement _table;
         private int _wavesCount;
@@ -88,13 +96,43 @@ namespace Assets._Project.Develop.Editor.EndlessMode
 
             _startWaveBox = new HelpBox(string.Empty, HelpBoxMessageType.Warning);
 
+            int? runSeed = EndlessModeEditorSettings.RunSeed;
+            string runSeedText = runSeed.HasValue ? runSeed.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
+
+            TextField runSeedField = new("Зерно забега") { value = runSeedText, tooltip = RunSeedTooltip };
+            runSeedField.RegisterValueChangedCallback(changeEvent => OnRunSeedChanged(changeEvent.newValue));
+
+            _runSeedBox = new HelpBox(string.Empty, HelpBoxMessageType.Info);
+
             section.Add(title);
             section.Add(startWaveField);
             section.Add(_startWaveBox);
+            section.Add(runSeedField);
+            section.Add(_runSeedBox);
 
             UpdateStartWaveBox();
+            UpdateRunSeedBox();
 
             return section;
+        }
+
+        // Пустое поле или не число — забег берёт случайное зерно, как в сборке
+        private void OnRunSeedChanged(string text)
+        {
+            bool isNumber = int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int seed);
+
+            EndlessModeEditorSettings.RunSeed = isNumber ? seed : null;
+
+            UpdateRunSeedBox();
+        }
+
+        private void UpdateRunSeedBox()
+        {
+            int? runSeed = EndlessModeEditorSettings.RunSeed;
+
+            _runSeedBox.text = runSeed.HasValue
+                ? $"Забег в редакторе пойдёт по зерну {runSeed.Value}. В сборке зерно всегда случайное"
+                : "Зерно забега случайное, как в сборке; его пишут консоль и лог плейтеста";
         }
 
         private VisualElement CreateWavesSection()
@@ -191,16 +229,13 @@ namespace Assets._Project.Develop.Editor.EndlessMode
                 return;
             }
 
-            EndlessWavesGenerator generator = new(config, levelPrefab.RoadPaths);
+            EndlessWavesGenerator generator = new(config, levelPrefab.RoadPaths, config.Seed);
 
             _table.Add(CreateHeaderRow(config));
 
             for (int waveNumber = FirstWaveNumber; waveNumber < FirstWaveNumber + _wavesCount; waveNumber++)
             {
-                EnemiesWavesStageConfig wave = generator.Generate(waveNumber);
-                generator.TryGetBoss(waveNumber, out MeleeConfig boss);
-
-                EndlessWaveSummary summary = EndlessWaveSummary.Create(waveNumber, wave, boss, config);
+                EndlessWaveSummary summary = EndlessWaveSummary.Create(generator.GetPlan(waveNumber), config);
 
                 _table.Add(CreateWaveRow(summary));
             }
@@ -231,8 +266,12 @@ namespace Assets._Project.Develop.Editor.EndlessMode
 
             AddCompositionCell(row, "Состав");
             AddCell(row, "Босс", BossColumnWidth);
+            AddCell(row, "Сила / бюджет", StrengthColumnWidth);
+            AddCell(row, "Тяжёлая", PathColumnWidth);
+            AddCell(row, "Акцент лёгк. / тяж.", AccentColumnWidth);
             AddCell(row, "Здор. ×", MultiplierColumnWidth);
-            AddCell(row, "Спавн, с", TimeColumnWidth);
+            AddCell(row, "Задержки, с", DelaysColumnWidth);
+            AddCell(row, "Вызов, с", TimeColumnWidth);
             AddCell(row, "Волна, с", TimeColumnWidth);
 
             row.style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -251,10 +290,18 @@ namespace Assets._Project.Develop.Editor.EndlessMode
             foreach (int tierEnemiesCount in summary.TiersEnemiesCounts)
                 AddCell(row, tierEnemiesCount.ToString(), TierColumnWidth);
 
+            string strength = $"{summary.Strength.ToString(StrengthFormat)} / {summary.Budget.ToString(StrengthFormat)}";
+            string accents = $"{summary.LightAccent} / {summary.HeavyAccent}";
+            string delays = string.Join(DelaysSeparator, summary.PathsDelays.Select(delay => delay.ToString(TimeFormat)));
+
             AddCompositionCell(row, summary.Composition);
             AddCell(row, summary.BossName, BossColumnWidth);
+            AddCell(row, strength, StrengthColumnWidth);
+            AddCell(row, summary.HeavyPath, PathColumnWidth);
+            AddCell(row, accents, AccentColumnWidth);
             AddCell(row, summary.HealthMultiplier.ToString(MultiplierFormat), MultiplierColumnWidth);
-            AddCell(row, summary.SpawnDuration.ToString(TimeFormat), TimeColumnWidth);
+            AddCell(row, delays, DelaysColumnWidth);
+            AddCell(row, summary.TimeToSkip.ToString(TimeFormat), TimeColumnWidth);
             AddCell(row, summary.WaveDuration.ToString(TimeFormat), TimeColumnWidth);
 
             return row;
