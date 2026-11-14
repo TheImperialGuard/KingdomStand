@@ -22,5 +22,6 @@
         public const string EncyclopediaStatTile = nameof(EncyclopediaStatTile);
         public const string EncyclopediaAbility = nameof(EncyclopediaAbility);
         public const string EnemyHealthBar = nameof(EnemyHealthBar);
+        public const string EnemyHint = nameof(EnemyHint);
     }
 }

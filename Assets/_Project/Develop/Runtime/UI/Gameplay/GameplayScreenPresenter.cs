@@ -3,6 +3,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay;
 using Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages;
 using Assets._Project.Develop.Runtime.UI.Core.Presenters;
 using Assets._Project.Develop.Runtime.UI.Gameplay.BossHealthBar;
+using Assets._Project.Develop.Runtime.UI.Gameplay.EnemyHints;
 using Assets._Project.Develop.Runtime.UI.Gameplay.GoldWallet;
 using Assets._Project.Develop.Runtime.UI.Gameplay.PlayerHealthDisplay;
 using Assets._Project.Develop.Runtime.UI.Gameplay.StagesStatus;
@@ -60,6 +61,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             CreateStagesStatus();
             CreatePlayerHealth();
             CreateBossHealthBar();
+            CreateEnemyHints();
 
             foreach (IPresenter presenter in _childPresenters)
                 presenter.Initialize();
@@ -108,6 +110,13 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             BossHealthBarPresenter bossHealthBarPresenter = _gameplayPresentersFactory.CreateBossHealthBarPresenter(_screenView.BossHealthBarView);
 
             _childPresenters.Add(bossHealthBarPresenter);
+        }
+
+        private void CreateEnemyHints()
+        {
+            EnemyHintsPresenter enemyHintsPresenter = _gameplayPresentersFactory.CreateEnemyHintsPresenter(_screenView.EnemyHintsView);
+
+            _childPresenters.Add(enemyHintsPresenter);
         }
 
         private void OnStagesLaunched()

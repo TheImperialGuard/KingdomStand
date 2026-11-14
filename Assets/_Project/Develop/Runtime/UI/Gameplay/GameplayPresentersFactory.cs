@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.EntitiesFactory;
 using Assets._Project.Develop.Runtime.Gameplay.Features.AbilitiesFeature.Abilities;
 using Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode;
+using Assets._Project.Develop.Runtime.Gameplay.Features.EnemyHints;
 using Assets._Project.Develop.Runtime.Gameplay.Features.GoldEarning;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Level;
 using Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages;
@@ -24,6 +25,7 @@ using Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.BuildTowerPopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.EndlessResultPopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.EnemyHealthBars;
+using Assets._Project.Develop.Runtime.UI.Gameplay.EnemyHints;
 using Assets._Project.Develop.Runtime.UI.Gameplay.GoldWallet;
 using Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.PlayerHealthDisplay;
@@ -170,6 +172,15 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
         public BossHealthBarPresenter CreateBossHealthBarPresenter(BossHealthBarView view)
         {
             return new BossHealthBarPresenter(view, _container.Resolve<EntitiesLifeContext>());
+        }
+
+        public EnemyHintsPresenter CreateEnemyHintsPresenter(EnemyHintsView view)
+        {
+            return new EnemyHintsPresenter(
+                view,
+                _container.Resolve<EnemyHintsService>(),
+                _container.Resolve<ViewsFactory>(),
+                _container.Resolve<GameplayPopupService>());
         }
 
         public StagesStatusPresenter CreateStagesStatusPresenter(IconTextView view)
