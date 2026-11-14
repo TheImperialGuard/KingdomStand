@@ -9,8 +9,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
     // уровень начинает с волны N через PlaytestHooks, его стейджи не трогаются.
     public static class PlaytestLevelCopy
     {
-        public static LevelConfig Create(PlaytestLaunch launch)
+        public static LevelConfig Create(PlaytestLaunch launch, out int removedStagesCount)
         {
+            removedStagesCount = 0;
+
             LevelConfig copy = Object.Instantiate(launch.Level);
             copy.name = launch.Level.name;
 
@@ -20,7 +22,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
                     LevelConfigFields.FindRequired(serializedCopy, LevelConfigFields.StartGold).intValue = launch.StartGold.Value;
 
                 if (launch.IsEndless == false)
-                    RemoveStagesBefore(serializedCopy, launch.StartStageIndex);
+                    removedStagesCount = RemoveStagesBefore(serializedCopy, launch.StartStageIndex);
 
                 serializedCopy.ApplyModifiedPropertiesWithoutUndo();
             }
@@ -29,13 +31,15 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         }
 
         // Последний стейдж остаётся всегда: стейджи могли удалить в окне прямо во время игры, перед «Заново».
-        private static void RemoveStagesBefore(SerializedObject serializedCopy, int startStageIndex)
+        private static int RemoveStagesBefore(SerializedObject serializedCopy, int startStageIndex)
         {
             SerializedProperty stages = LevelConfigFields.FindRequired(serializedCopy, LevelConfigFields.STAGES);
             int removedCount = Mathf.Min(startStageIndex, stages.arraySize - 1);
 
             for (int i = 0; i < removedCount; i++)
                 stages.DeleteArrayElementAtIndex(0);
+
+            return removedCount;
         }
     }
 }

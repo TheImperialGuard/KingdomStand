@@ -25,6 +25,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
         // С какой волны начинается бесконечный уровень — вместо старта с волны N из инспектора; null — играется кампания.
         int? GetStartWaveNumber();
 
+        // Сколько стейджей до стартового убрано из копии уровня: номера стейджей в бою меньше номеров уровня на это число.
+        int GetRemovedStagesCount();
+
         // Регистрации сцены Gameplay, которые нужны плейтесту, — лог прогона.
         void ProcessRegistrations(DIContainer container);
 

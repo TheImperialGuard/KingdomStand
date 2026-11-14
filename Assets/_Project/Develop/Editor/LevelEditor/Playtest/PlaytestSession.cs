@@ -34,6 +34,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         private readonly int? _campaignNumber;
 
         private LevelConfig _levelCopy;
+        private int _removedStagesCount;
         private PlaytestLogService _log;
         private bool _isStartArgsTaken;
 
@@ -69,12 +70,14 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         {
             DestroyLevelCopy();
 
-            _levelCopy = PlaytestLevelCopy.Create(Launch);
+            _levelCopy = PlaytestLevelCopy.Create(Launch, out _removedStagesCount);
 
             return _levelCopy;
         }
 
         public int? GetStartWaveNumber() => Launch.IsEndless ? Launch.StartWaveNumber : null;
+
+        public int GetRemovedStagesCount() => _removedStagesCount;
 
         public void ProcessRegistrations(DIContainer container)
         {

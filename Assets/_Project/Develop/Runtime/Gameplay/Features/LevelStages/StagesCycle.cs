@@ -10,6 +10,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages
     public class StagesCycle : IDisposable
     {
         public event Action Launched;
+        public event Action Stopped;
 
         private readonly StageProviderService _stageProviderService;
         private readonly GameplayPopupService _gameplayPopupService;
@@ -67,6 +68,8 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages
             _stageCanBeSkiped.Value = false;
 
             _stageProviderService.CleanupCurrent();
+
+            Stopped?.Invoke();
         }
 
         // Режим каждый кадр говорит, разрешает ли он досрочный вызов. Стейдж его уже открыл, а режим запретил — окно

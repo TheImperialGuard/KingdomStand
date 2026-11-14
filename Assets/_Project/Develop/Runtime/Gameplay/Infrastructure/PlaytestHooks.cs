@@ -52,6 +52,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
             return sessionWaveNumber.HasValue;
         }
 
+        // Плейтест кампании со стейджа N играет копию уровня без стейджей до N; вне плейтеста — 0.
+        public static int RemovedStagesCount => _session?.GetRemovedStagesCount() ?? 0;
+
         public static void ProcessRegistrations(DIContainer container) => _session?.ProcessRegistrations(container);
 
         public static void NotifyGameEnded(LevelResults results) => _session?.OnGameEnded(results);

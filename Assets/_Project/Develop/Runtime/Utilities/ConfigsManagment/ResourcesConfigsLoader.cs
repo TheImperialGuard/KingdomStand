@@ -1,6 +1,7 @@
 ﻿using Assets._Project.Develop.Runtime.Configs;
 using Assets._Project.Develop.Runtime.Configs.Encyclopedia;
 using Assets._Project.Develop.Runtime.Configs.Gameplay;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.EnemyHints;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Projectiles;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
@@ -30,6 +31,7 @@ namespace Assets._Project.Develop.Runtime.Utilities.ConfigsManagment
             {typeof(CameraConfig), "Configs/Gameplay/CameraConfig" },
             {typeof(RoutesPreviewConfig), "Configs/Gameplay/RoutesPreviewConfig" },
             {typeof(EncyclopediaConfig), "Configs/Encyclopedia/EncyclopediaConfig" },
+            {typeof(EnemyHintsConfig), "Configs/Gameplay/EnemyHintsConfig" },
         };
 
         public ResourcesConfigsLoader(ResourcesAssetsLoader resources)

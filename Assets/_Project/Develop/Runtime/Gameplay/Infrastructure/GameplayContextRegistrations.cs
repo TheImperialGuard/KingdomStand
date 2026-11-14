@@ -1,4 +1,5 @@
 ﻿using Assets._Project.Develop.Runtime.Configs.Gameplay;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.EnemyHints;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
@@ -10,6 +11,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.AbilitiesFeature.EnemyAb
 using Assets._Project.Develop.Runtime.Gameplay.Features.AI.Brains;
 using Assets._Project.Develop.Runtime.Gameplay.Features.AOE;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Enemies;
+using Assets._Project.Develop.Runtime.Gameplay.Features.EnemyHints;
 using Assets._Project.Develop.Runtime.Gameplay.Features.EndlessMode;
 using Assets._Project.Develop.Runtime.Gameplay.Features.GoldEarning;
 using Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature;
@@ -136,6 +138,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
 
             container.RegisterAsSingle(CreateStagesCycle);
 
+            // Без NonLazy сервис создал бы презентер экрана уже после прохода Initialize контейнера, и отсчёты бы не начались
+            container.RegisterAsSingle(CreateEnemyHintsService).NonLazy();
+
             container.RegisterAsSingle(CreateRoutesPreviewService).NonLazy();
 
             container.RegisterAsSingle(CreateTowersPlaceholdersService);
@@ -217,6 +222,16 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
                 c.Resolve<ICoroutinesPerformer>(),
                 c.Resolve<EntitiesLifeContext>(),
                 c.Resolve<Level>().RoadPaths);
+        }
+
+        private static EnemyHintsService CreateEnemyHintsService(DIContainer c)
+        {
+            return new EnemyHintsService(
+                c.Resolve<ConfigsProviderService>().GetConfig<EnemyHintsConfig>(),
+                _inputArgs.LevelNumber,
+                c.Resolve<StageProviderService>(),
+                c.Resolve<StagesCycle>(),
+                c.Resolve<TimerServiceFactory>());
         }
 
         private static StageProviderService CreateStageProviderService(DIContainer c)
