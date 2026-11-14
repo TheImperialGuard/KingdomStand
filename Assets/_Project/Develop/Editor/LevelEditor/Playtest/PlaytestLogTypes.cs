@@ -36,6 +36,10 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public WeatherKinds? ForcedWeather { get; set; }
 
+        // Зерно забега бесконечного уровня: по нему волны прогона собираются заново
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? RunSeed { get; set; }
+
         public PlaytestResult Result { get; set; }
         public int ReachedStage { get; set; }
         public float PreparationTime { get; set; }

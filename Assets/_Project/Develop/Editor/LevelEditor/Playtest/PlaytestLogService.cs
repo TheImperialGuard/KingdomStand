@@ -143,6 +143,7 @@ namespace Assets._Project.Develop.Editor.LevelEditor.Playtest
                 HasUnsavedChanges = HasUnsavedChanges(),
                 Automated = _launch.IsAutomated,
                 ForcedWeather = _launch.IsEndless ? EndlessModeEditorSettings.ForcedWeather : null,
+                RunSeed = (_stagesSource as EndlessStagesSource)?.Seed,
                 Result = PlaytestResult.InProgress,
                 LevelSnapshot = CreateLevelSnapshot(),
             };
