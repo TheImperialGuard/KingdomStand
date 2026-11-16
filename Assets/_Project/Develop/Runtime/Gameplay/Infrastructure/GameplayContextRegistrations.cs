@@ -29,6 +29,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature;
 using Assets._Project.Develop.Runtime.Gameplay.Features.TargetSelecting;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Towers;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial.Steps;
 using Assets._Project.Develop.Runtime.Gameplay.GameMode;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
@@ -144,6 +145,8 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
             // Без NonLazy сервис создал бы презентер экрана уже после прохода Initialize контейнера, и отсчёты бы не начались
             container.RegisterAsSingle(CreateEnemyHintsService).NonLazy();
 
+            container.RegisterAsSingle(CreateTutorialStepsFactory);
+
             container.RegisterAsSingle(CreateTutorialService).NonLazy();
 
             container.RegisterAsSingle(CreateRoutesPreviewService).NonLazy();
@@ -249,7 +252,22 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
                 c.Resolve<PlayerDataProvider>(),
                 c.Resolve<ICoroutinesPerformer>(),
                 c.Resolve<GameplayPopupService>(),
-                c.Resolve<EnemyHintsService>());
+                c.Resolve<EnemyHintsService>(),
+                c.Resolve<WalletService>(),
+                c.Resolve<TutorialStepsFactory>());
+        }
+
+        private static TutorialStepsFactory CreateTutorialStepsFactory(DIContainer c)
+        {
+            return new TutorialStepsFactory(
+                c.Resolve<ConfigsProviderService>().GetConfig<TutorialConfig>(),
+                c.Resolve<GameplayPopupService>(),
+                c.Resolve<BoundedOrthoCamera>(),
+                c.Resolve<IInputService>(),
+                c.Resolve<ICoroutinesPerformer>(),
+                c.Resolve<TowersPlaceholdersService>(),
+                c.Resolve<BuiltTowersService>(),
+                c.Resolve<TowersPurchaseService>());
         }
 
         // Обучение — только в кампании: бесконечному режиму и плейтесту из редактора уровней оно не нужно

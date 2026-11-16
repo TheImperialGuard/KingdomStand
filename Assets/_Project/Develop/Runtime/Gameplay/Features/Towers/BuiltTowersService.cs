@@ -9,6 +9,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Towers
     // Улучшение создаёт новую сущность и освобождает старую, поэтому список держится на событиях EntitiesLifeContext.
     public class BuiltTowersService : IDisposable
     {
+        // Новая башня: постройка или улучшение
+        public event Action<Entity> Added;
+
         private readonly EntitiesLifeContext _entitiesLifeContext;
 
         private readonly List<Entity> _towers = new();
@@ -23,6 +26,8 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Towers
             _entitiesLifeContext.Added += OnEntityAdded;
             _entitiesLifeContext.Released += OnEntityReleased;
         }
+
+        public IReadOnlyList<Entity> Towers => _towers;
 
         public void Dispose()
         {
@@ -68,8 +73,11 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Towers
 
         private void OnEntityAdded(Entity entity)
         {
-            if (entity.HasComponent<TowerType>())
-                _towers.Add(entity);
+            if (entity.HasComponent<TowerType>() == false)
+                return;
+
+            _towers.Add(entity);
+            Added?.Invoke(entity);
         }
 
         private void OnEntityReleased(Entity entity) => _towers.Remove(entity);

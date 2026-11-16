@@ -24,6 +24,8 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Level
             _placeholderConfig = placeholderConfig;
         }
 
+        public IReadOnlyList<Entity> Placeholders => _placeholders;
+
         public void CreateAllPlaceholders()
         {
             foreach (Transform transform in _level.TowersPositions)
