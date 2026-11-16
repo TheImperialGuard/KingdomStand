@@ -10,8 +10,10 @@ using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup
 {
-    public class SkipStagePopupPresenter : PopupPresenterBase
+    public class SkipStagePopupPresenter : PopupPresenterBase, IStageCallPopup
     {
+        public event Action InfoShown;
+
         private readonly SkipStagePopupView _view;
 
         private readonly StagesCycle _stagesCycle;
@@ -42,6 +44,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup
         }
 
         protected override PopupViewBase PopupView => _view;
+
+        public RectTransform ButtonRect => _view.StartButtonRect;
 
         public override void Initialize()
         {
@@ -81,12 +85,17 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup
             _view.StartButtonClicked -= OnStartButtonClicked;
         }
 
+        public void CancelInfo()
+        {
+            _view.HideInfo();
+            _clicks = 0;
+        }
+
         protected override void OnClickedOutside(RaycastHit oldHit, RaycastHit newHit)
         {
             base.OnClickedOutside(oldHit, newHit);
 
-            _view.HideInfo();
-            _clicks = 0;
+            CancelInfo();
         }
 
         private void OnStartButtonClicked()
@@ -99,6 +108,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup
             else
             {
                 _view.ShowInfo();
+                InfoShown?.Invoke();
             }
         }
 

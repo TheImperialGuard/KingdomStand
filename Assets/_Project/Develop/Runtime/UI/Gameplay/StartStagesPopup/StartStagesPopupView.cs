@@ -34,6 +34,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
         [SerializeField] private float _buttonSize = 120f;
         [SerializeField] private float _phoneButtonSize = 144f;
 
+        public RectTransform StartButtonRect => _startButtonRect;
+
         public void ShowInfo()
         {
             _startButton.SetState(MedallionStates.Armed);

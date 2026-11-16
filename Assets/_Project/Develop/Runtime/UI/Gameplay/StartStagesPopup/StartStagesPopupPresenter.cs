@@ -3,12 +3,15 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.Utilities.Audio;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using System;
 using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
 {
-    public class StartStagesPopupPresenter : PopupPresenterBase
+    public class StartStagesPopupPresenter : PopupPresenterBase, IStageCallPopup
     {
+        public event Action InfoShown;
+
         private readonly StartStagesPopupView _view;
 
         private readonly StagesCycle _stagesCycle;
@@ -34,6 +37,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
 
         protected override PopupViewBase PopupView => _view;
 
+        public RectTransform ButtonRect => _view.StartButtonRect;
+
         public override void Initialize()
         {
             base.Initialize();
@@ -58,12 +63,17 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
             _view.StartButtonClicked -= OnStartButtonClicked;
         }
 
+        public void CancelInfo()
+        {
+            _view.HideInfo();
+            _clicks = 0;
+        }
+
         protected override void OnClickedOutside(RaycastHit oldHit, RaycastHit newHit)
         {
             base.OnClickedOutside(oldHit, newHit);
 
-            _view.HideInfo();
-            _clicks = 0;
+            CancelInfo();
         }
 
         private void OnStartButtonClicked()
@@ -77,6 +87,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
             else
             {
                 _view.ShowInfo();
+                InfoShown?.Invoke();
             }
         }
     }

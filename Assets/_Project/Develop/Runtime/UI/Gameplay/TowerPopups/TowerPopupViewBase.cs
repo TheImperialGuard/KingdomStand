@@ -20,6 +20,9 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
 
         private Camera _camera;
 
+        // Кольцо с медальонами целиком — корень окна: он стоит на башне и анимацией появления не масштабируется
+        public RectTransform RingArea => (RectTransform)transform;
+
         public void UpdateWorldPosition(Vector3 worldPosition)
         {
             Vector3 screenPosition = _camera.WorldToScreenPoint(worldPosition);

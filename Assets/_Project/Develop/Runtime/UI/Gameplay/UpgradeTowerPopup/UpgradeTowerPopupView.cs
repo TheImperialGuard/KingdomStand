@@ -12,6 +12,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
         [SerializeField] private TowerMedallionView _upgradeButton;
         [SerializeField] private MedallionButtonView _sellButton;
 
+        public RectTransform UpgradeButtonRect => (RectTransform)_upgradeButton.transform;
+
         public void SetUpgradeButton(MedallionStates state, int cost) => _upgradeButton.Set(state, cost);
 
         public void SetSellButton(MedallionStates state) => _sellButton.SetState(state);

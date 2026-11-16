@@ -10,6 +10,7 @@ using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
 using Assets._Project.Develop.Runtime.Utilities.Text;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 using System;
+using UnityEngine;
 #if UNITY_EDITOR
 using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
 #endif
@@ -20,6 +21,9 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
     // следующего уровня (Р-19).
     public class UpgradeTowerPopupPresenter : TowerPopupPresenterBase<UpgradeTowerPopupButtons>
     {
+        // Нажатие на кнопку улучшения — любое, в том числе заряжающее; нужно указателю обучения
+        public event Action UpgradeClicked;
+
         private readonly UpgradeTowerPopupView _view;
 
         private readonly TowersFactory _towersFactory;
@@ -55,6 +59,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
 
         public TowerTypes TowerType => Source.TowerType.Value;
 
+        public RectTransform UpgradeButtonRect => _view.UpgradeButtonRect;
+
         private int NextTowerLevel => Source.TowerLevel.Value + 1;
 
         private ShootingTowerConfig NextLevelConfig => _towersListConfig.GetBy(TowerType, NextTowerLevel);
@@ -64,6 +70,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
             base.Initialize();
 
             _view.ButtonClicked += OnButtonClicked;
+            _view.ButtonClicked += OnAnyButtonClicked;
         }
 
         public override void Dispose()
@@ -71,6 +78,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
             base.Dispose();
 
             _view.ButtonClicked -= OnButtonClicked;
+            _view.ButtonClicked -= OnAnyButtonClicked;
         }
 
         protected override void OnPreHide()
@@ -78,6 +86,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
             base.OnPreHide();
 
             _view.ButtonClicked -= OnButtonClicked;
+            _view.ButtonClicked -= OnAnyButtonClicked;
         }
 
         protected override void RefreshButtons()
@@ -143,6 +152,12 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
                 default:
                     throw new ArgumentOutOfRangeException(nameof(button));
             }
+        }
+
+        private void OnAnyButtonClicked(UpgradeTowerPopupButtons button)
+        {
+            if (button == UpgradeTowerPopupButtons.Upgrade)
+                UpgradeClicked?.Invoke();
         }
 
         private void UpgradeTower()

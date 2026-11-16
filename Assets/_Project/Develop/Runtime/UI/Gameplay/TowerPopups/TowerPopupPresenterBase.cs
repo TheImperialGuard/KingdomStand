@@ -64,6 +64,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
 
         protected TowersPlaceholdersService TowersPlaceholdersService { get; }
 
+        public RectTransform RingArea => _view.RingArea;
+
         public override void Initialize()
         {
             base.Initialize();

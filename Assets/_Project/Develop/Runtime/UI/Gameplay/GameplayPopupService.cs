@@ -23,12 +23,19 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
 {
     public class GameplayPopupService : ProjectPopupService
     {
+        // Открытие окон, на которые указывает обучение: окно вызова волны и окно башни (с её источником) — и закрытие
+        // окна башни
+        public event Action<IStageCallPopup> StageCallPopupOpened;
+        public event Action<PopupPresenterBase, Entity> TowerPopupOpened;
+        public event Action TowerPopupClosed;
+
         private readonly GameplayUIRoot _uIRoot;
         private readonly GameplayPresentersFactory _gameplayPresentersFactory;
         private readonly TimeScalePauseService _timeScalePauseService;
 
         private PopupPresenterBase _towerPopup;
         private Entity _towerPopupSource;
+        private IStageCallPopup _stageCallPopup;
 
         public GameplayPopupService(
             ViewsFactory viewsFactory,
@@ -42,6 +49,11 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             _gameplayPresentersFactory = gameplayPresentersFactory;
             _timeScalePauseService = timeScalePauseService;
         }
+
+        // Открытое окно вызова волны — старта или досрочного вызова; null, если его нет
+        public IStageCallPopup StageCallPopup => _stageCallPopup;
+
+        public bool IsTowerPopupOpen => _towerPopup != null;
 
         protected override Transform PopupLayer => _uIRoot.PopupsLayer;
 
@@ -62,6 +74,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             StartStagesPopupPresenter popup = _gameplayPresentersFactory.CreateStartStagesPopupPresenter(view);
 
             OnPopupCreated(popup, view, closedCallback);
+            TrackStageCallPopup(popup);
 
             return popup;
         }
@@ -73,6 +86,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             SkipStagePopupPresenter popup = _gameplayPresentersFactory.CreateSkipStagePopupPresenter(view);
 
             OnPopupCreated(popup, view, closedCallback);
+            TrackStageCallPopup(popup);
 
             return popup;
         }
@@ -196,6 +210,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             _towerPopupSource = source;
 
             popup.CloseRequest += OnTowerPopupCloseRequest;
+
+            TowerPopupOpened?.Invoke(popup, source);
         }
 
         private void OnTowerPopupCloseRequest(PopupPresenterBase popup, bool withCallBack)
@@ -207,6 +223,25 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
 
             _towerPopup = null;
             _towerPopupSource = null;
+
+            TowerPopupClosed?.Invoke();
+        }
+
+        private void TrackStageCallPopup(IStageCallPopup popup)
+        {
+            _stageCallPopup = popup;
+
+            popup.CloseRequest += OnStageCallPopupCloseRequest;
+
+            StageCallPopupOpened?.Invoke(popup);
+        }
+
+        private void OnStageCallPopupCloseRequest(PopupPresenterBase popup, bool withCallBack)
+        {
+            popup.CloseRequest -= OnStageCallPopupCloseRequest;
+
+            if (popup == _stageCallPopup)
+                _stageCallPopup = null;
         }
     }
 }
