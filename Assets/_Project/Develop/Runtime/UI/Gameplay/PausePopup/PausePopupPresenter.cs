@@ -27,6 +27,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
         private AudioSettingsPresenter _audioSettingsPresenter;
         private IDisposable _closeRequestedDisposable;
 
+        private bool _isPausing;
+
         public PausePopupPresenter(
             ICoroutinesPerformer coroutinesPerformer,
             RayShooterService rayShooterService,
@@ -64,6 +66,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
             _popupView.RestartClicked += OnRestartClicked;
 
             _timeScalePauseService.Pause();
+            _isPausing = true;
         }
 
         public override void Dispose()
@@ -74,7 +77,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
 
             _audioSettingsPresenter.Dispose();
 
-            _timeScalePauseService.Unpause();
+            ReleasePause();
         }
 
         protected override void OnPreShow()
@@ -95,7 +98,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
 
             _audioSettingsPresenter.Unsubscribe();
 
-            _timeScalePauseService.Unpause();
+            ReleasePause();
         }
 
         private void CreateAudioSettings()
@@ -103,6 +106,16 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
             _audioSettingsPresenter = _presentersFactory.CreateAudioSettingsPresenter(_popupView.AudioSettingsView);
 
             _audioSettingsPresenter.Initialize();
+        }
+
+        // Пауза вложенная: снимается один раз, при скрытии или при уничтожении окна — что наступит раньше
+        private void ReleasePause()
+        {
+            if (_isPausing == false)
+                return;
+
+            _isPausing = false;
+            _timeScalePauseService.Unpause();
         }
 
         private void UnsubscribeFromInput()
