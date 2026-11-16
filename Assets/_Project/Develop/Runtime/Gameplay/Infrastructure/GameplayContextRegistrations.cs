@@ -3,6 +3,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.EnemyHints;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Tutorial;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.EntitiesFactory;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Mono;
@@ -27,9 +28,11 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.SpawnFeature;
 using Assets._Project.Develop.Runtime.Gameplay.Features.StatusFeature;
 using Assets._Project.Develop.Runtime.Gameplay.Features.TargetSelecting;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Towers;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial;
 using Assets._Project.Develop.Runtime.Gameplay.GameMode;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
+using Assets._Project.Develop.Runtime.Meta.Features.Tutorial;
 using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.UI.Gameplay;
 using Assets._Project.Develop.Runtime.UI.Gameplay.EnemyHealthBars;
@@ -141,6 +144,8 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
             // Без NonLazy сервис создал бы презентер экрана уже после прохода Initialize контейнера, и отсчёты бы не начались
             container.RegisterAsSingle(CreateEnemyHintsService).NonLazy();
 
+            container.RegisterAsSingle(CreateTutorialService).NonLazy();
+
             container.RegisterAsSingle(CreateRoutesPreviewService).NonLazy();
 
             container.RegisterAsSingle(CreateTowersPlaceholdersService);
@@ -232,6 +237,30 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
                 c.Resolve<StageProviderService>(),
                 c.Resolve<StagesCycle>(),
                 c.Resolve<TimerServiceFactory>());
+        }
+
+        private static TutorialService CreateTutorialService(DIContainer c)
+        {
+            return new TutorialService(
+                c.Resolve<ConfigsProviderService>().GetConfig<TutorialConfig>(),
+                _inputArgs.LevelNumber,
+                IsTutorialEnabled(),
+                c.Resolve<TutorialProgressService>(),
+                c.Resolve<PlayerDataProvider>(),
+                c.Resolve<ICoroutinesPerformer>(),
+                c.Resolve<GameplayPopupService>(),
+                c.Resolve<EnemyHintsService>());
+        }
+
+        // Обучение — только в кампании: бесконечному режиму и плейтесту из редактора уровней оно не нужно
+        private static bool IsTutorialEnabled()
+        {
+            #if UNITY_EDITOR
+                if (PlaytestHooks.IsPlaytestRunning)
+                    return false;
+            #endif
+
+            return _inputArgs.IsEndless == false;
         }
 
         private static StageProviderService CreateStageProviderService(DIContainer c)

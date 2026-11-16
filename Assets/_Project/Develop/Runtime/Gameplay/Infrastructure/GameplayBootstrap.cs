@@ -6,6 +6,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.Enemies;
 using Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.Gameplay.Features.RoutesPreview;
+using Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Weather;
 using Assets._Project.Develop.Runtime.Infrastructure;
 using Assets._Project.Develop.Runtime.Infrastructure.DI;
@@ -41,6 +42,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
         private ParticleEffectsPool _particleEffectsPool;
         private EnemiesHealthBarsPresenter _enemiesHealthBarsPresenter;
         private WeatherService _weatherService;
+        private TutorialService _tutorialService;
 
 #if KS_PERF_PROBE
         private PerformanceProbeService _performanceProbeService;
@@ -87,6 +89,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
             _hotkeysService = _container.Resolve<HotkeysService>();
             _particleEffectsPool = _container.Resolve<ParticleEffectsPool>();
             _enemiesHealthBarsPresenter = _container.Resolve<EnemiesHealthBarsPresenter>();
+            _tutorialService = _container.Resolve<TutorialService>();
 
             // Погода есть только там, где её зарегистрировали, — сейчас на бесконечном уровне
             if (_container.IsAlreadyRegister<WeatherService>())
@@ -116,6 +119,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
             _musicSwitcherService.SwitchFor(MusicContexts.GameplayPrepare);
 
             _gameplayCycle.Launch();
+
+            // После запуска боя: слайдер обучения встаёт поверх окна старта волны
+            _tutorialService.ProcessLevelStart();
         }
 
         private void Update()
