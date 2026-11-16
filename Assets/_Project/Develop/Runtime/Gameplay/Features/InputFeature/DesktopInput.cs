@@ -17,6 +17,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
         private const float MaxWheelStepsPerFrame = 1f;
 
         private readonly CameraConfig _cameraConfig;
+        private readonly UIPointerProbe _uiPointerProbe = new();
 
         public DesktopInput(CameraConfig cameraConfig)
         {
@@ -73,7 +74,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
 
                 float wheelSteps = Mathf.Clamp(Input.mouseScrollDelta.y, -MaxWheelStepsPerFrame, MaxWheelStepsPerFrame);
 
-                if (wheelSteps == 0f || IsPointerOverUI())
+                if (wheelSteps == 0f || IsCameraBlockedByUI())
                     return NoZoom;
 
                 // Колёсико от себя приближает: масштаб камеры уменьшается.
@@ -91,6 +92,13 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
                 return false;
 
             return eventSystem.IsPointerOverGameObject();
+        }
+
+        private bool IsCameraBlockedByUI()
+        {
+            _uiPointerProbe.Probe(Input.mousePosition);
+
+            return _uiPointerProbe.IsBlockingCamera;
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.EventSystems;
+﻿using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
 {
@@ -13,10 +11,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
         private const int NO_FINGER_ID = -1;
         private const float NoZoom = 1f;
 
-        private readonly List<RaycastResult> _uiRaycastResults = new();
+        private readonly UIPointerProbe _uiPointerProbe = new();
         private readonly float _dragThresholdPixels;
 
-        private PointerEventData _uiPointerEventData;
         private Vector2 _touchStartPosition;
         private Vector2 _tapPosition;
         private Vector2 _cameraZoomPivot;
@@ -26,6 +23,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
         private int _trackedFingerId = NO_FINGER_ID;
         private bool _isDragging;
         private bool _isStartedOverUI;
+        private bool _isCameraBlocked;
         private bool _isTapPerformed;
         private bool _isPinchBlocked;
 
@@ -146,7 +144,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
             if (touch.fingerId != _trackedFingerId)
             {
                 // Второй палец на интерфейсе — например, нажатие кнопки, пока первый двигает карту, — щипком не считается.
-                if (touch.phase == TouchPhase.Began && IsPointerOverUI(touch.position))
+                if (touch.phase == TouchPhase.Began && IsCameraBlockedByUI(touch.position))
                     _isPinchBlocked = true;
 
                 return;
@@ -174,7 +172,11 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
             _trackedFingerId = touch.fingerId;
             _touchStartPosition = touch.position;
             _isDragging = false;
-            _isStartedOverUI = IsPointerOverUI(touch.position);
+
+            // Касание над интерфейсом тапом не считается, а камеру двигает, только если интерфейс её пропускает
+            _uiPointerProbe.Probe(touch.position);
+            _isStartedOverUI = _uiPointerProbe.IsOverUI;
+            _isCameraBlocked = _uiPointerProbe.IsBlockingCamera;
         }
 
         private void UpdateDrag(Touch touch)
@@ -184,7 +186,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
             if (_isDragging == false && Vector2.Distance(touch.position, _touchStartPosition) >= _dragThresholdPixels)
                 _isDragging = true;
 
-            if (_isDragging && _isStartedOverUI == false)
+            if (_isDragging && _isCameraBlocked == false)
                 _cameraDelta = ToWorldDelta(touch.deltaPosition);
         }
 
@@ -207,7 +209,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
         {
             _cameraDelta = Vector3.zero;
 
-            if (_isStartedOverUI || _isPinchBlocked || IsMoving(first) == false || IsMoving(second) == false)
+            if (_isCameraBlocked || _isPinchBlocked || IsMoving(first) == false || IsMoving(second) == false)
                 return;
 
             Vector2 previousFirst = first.position - first.deltaPosition;
@@ -233,27 +235,14 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.InputFeature
             _trackedFingerId = NO_FINGER_ID;
             _isDragging = false;
             _isStartedOverUI = false;
+            _isCameraBlocked = false;
         }
 
-        // Своя проверка вместо IsPointerOverGameObject: порядок Update между
-        // EventSystem и бутстрапом не задан, и на кадре касания указатель
-        // модуля может быть ещё не заведён или уже освобождён.
-        private bool IsPointerOverUI(Vector2 screenPosition)
+        private bool IsCameraBlockedByUI(Vector2 screenPosition)
         {
-            EventSystem eventSystem = EventSystem.current;
+            _uiPointerProbe.Probe(screenPosition);
 
-            if (eventSystem == null)
-                return false;
-
-            if (_uiPointerEventData == null)
-                _uiPointerEventData = new PointerEventData(eventSystem);
-
-            _uiPointerEventData.position = screenPosition;
-
-            _uiRaycastResults.Clear();
-            eventSystem.RaycastAll(_uiPointerEventData, _uiRaycastResults);
-
-            return _uiRaycastResults.Count > 0;
+            return _uiPointerProbe.IsBlockingCamera;
         }
 
         private Vector3 ToWorldDelta(Vector2 screenDelta)
