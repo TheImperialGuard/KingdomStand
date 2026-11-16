@@ -9,12 +9,6 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
     // с полоской, защита и черты.
     public class BottomInfoPopupView : PopupViewBase
     {
-        private const string PhysicalDamageCaption = "физ. урон";
-        private const string MagicDamageCaption = "маг. урон";
-        private const string PhysicalResistanceValue = "физ.";
-        private const string MagicResistanceValue = "маг.";
-        private const string NoResistanceValue = "нет";
-
         [SerializeField] private TMP_Text _title;
         [SerializeField] private Color _towerTitleColor = new(0.169f, 0.282f, 0.518f);
         [SerializeField] private Color _enemyTitleColor = new(0.478f, 0.141f, 0.122f);
@@ -33,14 +27,13 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
         [SerializeField] private Sprite _physicalResistanceIcon;
         [SerializeField] private Sprite _magicResistanceIcon;
 
-        public void SetTowerInfo(string title, DamageTypes damageType, string attacksPerSecond, string range)
+        public void SetTowerInfo(string title, DamageTypes damageType, string damageCaption, string attacksPerSecond, string range)
         {
             SetTitle(title, _towerTitleColor);
             SetTowerTilesVisible(true);
 
-            bool isMagic = damageType == DamageTypes.Magic;
-            _damageTile.SetIcon(isMagic ? _magicDamageIcon : _physicalDamageIcon);
-            _damageTile.SetCaption(isMagic ? MagicDamageCaption : PhysicalDamageCaption);
+            _damageTile.SetIcon(damageType == DamageTypes.Magic ? _magicDamageIcon : _physicalDamageIcon);
+            _damageTile.SetCaption(damageCaption);
 
             _attacksPerSecondTile.SetValue(attacksPerSecond);
             _rangeTile.SetValue(range);
@@ -48,7 +41,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
 
         public void SetTowerDamage(string damage) => _damageTile.SetValue(damage);
 
-        public void SetEnemyInfo(string title, DamageTypes resistanceType, bool isBoss, bool isFlying)
+        // Значение защиты — подпись её типа или «нет», если защиты у врага нет: тогда плитка приглушена.
+        public void SetEnemyInfo(string title, DamageTypes resistanceType, string resistanceValue, bool isBoss, bool isFlying)
         {
             SetTitle(title, _enemyTitleColor);
             SetTowerTilesVisible(false);
@@ -59,15 +53,15 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
             switch (resistanceType)
             {
                 case DamageTypes.Physic:
-                    SetResistance(_physicalResistanceIcon, PhysicalResistanceValue, false);
+                    SetResistance(_physicalResistanceIcon, resistanceValue, false);
                     break;
 
                 case DamageTypes.Magic:
-                    SetResistance(_magicResistanceIcon, MagicResistanceValue, false);
+                    SetResistance(_magicResistanceIcon, resistanceValue, false);
                     break;
 
                 default:
-                    SetResistance(_physicalResistanceIcon, NoResistanceValue, true);
+                    SetResistance(_physicalResistanceIcon, resistanceValue, true);
                     break;
             }
         }

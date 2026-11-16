@@ -28,6 +28,12 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
 
         public void SetSellButton(MedallionStates state) => _sellButton.SetState(state);
 
+        public void SetMaxPriceText(string text)
+        {
+            _firstAbilityButton.SetMaxPriceText(text);
+            _secondAbilityButton.SetMaxPriceText(text);
+        }
+
         private void OnEnable()
         {
             _firstAbilityButton.Clicked += OnFirstAbilityButtonClicked;

@@ -1,5 +1,6 @@
 ﻿using System;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -16,6 +17,8 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
         IPointerUpHandler,
         IPointerClickHandler
     {
+        private const float TitleLineHeight = 1.15f;
+
         public event Action Clicked;
         public event Action<PlayModeCardView> HoverStarted;
         public event Action<PlayModeCardView> HoverEnded;
@@ -26,6 +29,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
         [SerializeField] private RectTransform _lift;
         [SerializeField] private RectTransform _flag;
         [SerializeField] private RectTransform _title;
+        [SerializeField] private TMP_Text _titleText;
 
         [SerializeField, Range(0f, 1f)] private float _backHoveredAlpha = 0.58f;
         [SerializeField, Range(0f, 1f)] private float _dimmedAlpha = 0.7f;
@@ -64,6 +68,17 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
         }
 
         private void OnDestroy() => KillTweens();
+
+        // Высота заголовка — по числу его строк с межстрочным макета. В префабе она стоит под русский текст, а перевод
+        // может занять другое число строк: группа карточки высоту детей не задаёт.
+        public void FitTitleHeight()
+        {
+            _titleText.ForceMeshUpdate();
+
+            float height = _titleText.textInfo.lineCount * _titleText.fontSize * TitleLineHeight;
+
+            _title.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+        }
 
         public void SetDimmed(bool isDimmed)
         {

@@ -8,6 +8,7 @@ using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia;
 using Assets._Project.Develop.Runtime.Utilities.ConfigsManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.UI.ProjectContext
@@ -43,7 +44,8 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext
                 _container.Resolve<HotkeysService>(),
                 _container.Resolve<ViewsFactory>(),
                 startRecord,
-                _container.Resolve<UISoundPlayer>());
+                _container.Resolve<UISoundPlayer>(),
+                _container.Resolve<LocalizationService>());
         }
     }
 }

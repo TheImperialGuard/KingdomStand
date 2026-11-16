@@ -13,15 +13,20 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
         [SerializeField] private MedallionPriceView _price;
         [SerializeField] private MedallionLevelsView _levels;
 
+        private string _maxPriceText;
+
         public void Set(MedallionStates state, int cost)
         {
             _button.SetState(state);
 
             if (state == MedallionStates.Max)
-                _price.SetMax();
+                _price.SetMax(_maxPriceText);
             else
                 _price.SetCost(cost, state != MedallionStates.Unavailable);
         }
+
+        // Надпись ценника на максимальном уровне — её задаёт окно, которому этот уровень нужен.
+        public void SetMaxPriceText(string text) => _maxPriceText = text;
 
         public void SetIcons(MedallionIcons icons) => _button.SetIcons(icons);
 

@@ -5,11 +5,9 @@ using UnityEngine.UI;
 namespace Assets._Project.Develop.Runtime.UI.CommonViews
 {
     // Ценник под медальоном: лента с монетой и ценой. Ширина ленты — по содержимому (группа раскладки). Когда золота не
-    // хватает, лента темнеет, цена краснеет; на максимуме вместо цены — «МАКС» без монеты.
+    // хватает, лента темнеет, цена краснеет; на максимуме вместо цены — надпись («МАКС») без монеты.
     public class MedallionPriceView : MonoBehaviour
     {
-        private const string MaxText = "МАКС";
-
         [SerializeField] private Image _ribbon;
         [SerializeField] private GameObject _coin;
         [SerializeField] private TMP_Text _price;
@@ -28,10 +26,10 @@ namespace Assets._Project.Develop.Runtime.UI.CommonViews
             ApplyStyle(isAffordable);
         }
 
-        public void SetMax()
+        public void SetMax(string text)
         {
             _coin.SetActive(false);
-            _price.text = MaxText;
+            _price.text = text;
             ApplyStyle(true);
         }
 

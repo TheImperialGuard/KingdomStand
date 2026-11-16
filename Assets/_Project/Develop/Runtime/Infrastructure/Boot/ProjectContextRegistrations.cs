@@ -25,6 +25,7 @@ using Assets._Project.Develop.Runtime.Utilities.DataManagment.DataRepository.YG2
 using Assets._Project.Develop.Runtime.Utilities.DataManagment.KeysStorage;
 using Assets._Project.Develop.Runtime.Utilities.DataManagment.Serializers;
 using Assets._Project.Develop.Runtime.Utilities.LoadingScreen;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.SceneManagment;
 using Assets._Project.Develop.Runtime.Utilities.Timer;
 using UnityEngine;
@@ -35,6 +36,7 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
     public class ProjectContextRegistrations
     {
         private const string EditorSavesFolderName = "Saves";
+        private const string TranslationTablePath = "Localization/English";
 
         public static void Process(DIContainer container)
         {
@@ -47,6 +49,8 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
             container.RegisterAsSingle(CreateConfigsProviderService);
 
             container.RegisterAsSingle(CreateSceneSwitcherService);
+
+            container.RegisterAsSingle(CreateLocalizationService);
 
             container.RegisterAsSingle(CreateViewsFactory);
 
@@ -126,7 +130,30 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
 
         private static ViewsFactory CreateViewsFactory(DIContainer c)
         {
-            return new ViewsFactory(c.Resolve<ResourcesAssetsLoader>());
+            return new ViewsFactory(c.Resolve<ResourcesAssetsLoader>(), c.Resolve<LocalizationService>());
+        }
+
+        private static LocalizationService CreateLocalizationService(DIContainer c)
+        {
+            ResourcesAssetsLoader resourcesAssetsLoader = c.Resolve<ResourcesAssetsLoader>();
+
+            TextAsset tableAsset = resourcesAssetsLoader.Load<TextAsset>(TranslationTablePath);
+            TranslationTable table = new(tableAsset.text);
+
+            LocalizationService localizationService = new(CreateLanguageSource(), table);
+
+            Debug.Log($"Язык игры: {localizationService.CurrentLanguage}");
+
+            return localizationService;
+        }
+
+        private static ILanguageSource CreateLanguageSource()
+        {
+            #if UNITY_WEBGL && YandexGamesPlatform_yg
+                return new YGLanguageSource();
+            #else
+                return new SystemLanguageSource();
+            #endif
         }
 
         private static SaveLoadService CreateSaveLoadService(DIContainer c)
@@ -233,7 +260,11 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
             StandardLoadingScreen standardLoadingScreen = resourcesAssetsLoader
                 .Load<StandardLoadingScreen>("Utilities/StandardLoadingScreen");
 
-            return GameObject.Instantiate(standardLoadingScreen);
+            StandardLoadingScreen instance = GameObject.Instantiate(standardLoadingScreen);
+
+            c.Resolve<LocalizationService>().TranslateTexts(instance.gameObject);
+
+            return instance;
         }
 
         private static MusicPlayer CreateMusicPlayer(DIContainer c)

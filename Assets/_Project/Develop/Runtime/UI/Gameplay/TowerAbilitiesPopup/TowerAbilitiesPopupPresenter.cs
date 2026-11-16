@@ -11,6 +11,7 @@ using Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups;
 using Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia;
 using Assets._Project.Develop.Runtime.Utilities.CameraManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 using System;
 using System.Collections.Generic;
@@ -26,8 +27,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
     // снимается, кнопки показывают новый уровень.
     public class TowerAbilitiesPopupPresenter : TowerPopupPresenterBase<TowerAbilitiesPopupButtons>
     {
-        private const string LevelPrefix = "Уровень ";
-        private const string NextLevelArrow = " → ";
+        private const string LevelTemplate = "Уровень {0} → {1}";
+        private const string MaxPriceText = "МАКС";
 
         private readonly TowerAbilitiesPopupView _view;
 
@@ -49,7 +50,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
             TowersPlaceholdersService towersPlaceholdersService,
             AbilitiesFactory abilitiesFactory,
             BoundedOrthoCamera camera,
-            UISoundPlayer uiSoundPlayer)
+            UISoundPlayer uiSoundPlayer,
+            LocalizationService localizationService)
             : base(
                 coroutinesPerformer,
                 rayShooterService,
@@ -59,7 +61,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
                 towersPlaceholdersService,
                 walletService,
                 camera,
-                uiSoundPlayer)
+                uiSoundPlayer,
+                localizationService)
         {
             _view = view;
             _towersAbilitiesListConfig = towersAbilitiesListConfig;
@@ -72,6 +75,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
         public override void Initialize()
         {
             SetCurrentAbilities();
+            _view.SetMaxPriceText(LocalizationService.Translate(MaxPriceText));
 
             base.Initialize();
 
@@ -132,10 +136,10 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
             int nextLevel = level + 1;
 
             return new TowerTipContent(
-                abilityWithInfo.config.Name,
-                abilityWithInfo.config.DescriptionByLevel[level],
-                subtitle: LevelPrefix + level + NextLevelArrow + nextLevel,
-                parameters: EncyclopediaAbilityNumbers.Format(abilityWithInfo.config, nextLevel));
+                LocalizationService.Translate(abilityWithInfo.config.Name),
+                LocalizationService.Translate(abilityWithInfo.config.DescriptionByLevel[level]),
+                subtitle: LocalizationService.FormatTemplate(LevelTemplate, level, nextLevel),
+                parameters: EncyclopediaAbilityNumbers.Format(abilityWithInfo.config, nextLevel, LocalizationService));
         }
 
         protected override void Activate(TowerAbilitiesPopupButtons button)

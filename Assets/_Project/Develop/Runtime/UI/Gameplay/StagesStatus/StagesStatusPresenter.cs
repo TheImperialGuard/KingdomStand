@@ -1,6 +1,7 @@
 ﻿using Assets._Project.Develop.Runtime.Gameplay.Features.LevelStages;
 using Assets._Project.Develop.Runtime.UI.CommonViews;
 using Assets._Project.Develop.Runtime.UI.Core.Presenters;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using System;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.StagesStatus
@@ -8,18 +9,23 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StagesStatus
     // «Волна  N/M» в HUD; у бесконечного режима числа волн нет — «Волна  N».
     public class StagesStatusPresenter : IPresenter
     {
-        private const string StatusPrefix = "Волна  ";
-        private const string CountSeparator = "/";
+        private const string FiniteStatusTemplate = "Волна  {0}/{1}";
+        private const string EndlessStatusTemplate = "Волна  {0}";
 
         private readonly IconTextView _view;
         private readonly StageProviderService _stagesProvider;
+        private readonly LocalizationService _localizationService;
 
         private IDisposable _currentStageChangedDisposable;
 
-        public StagesStatusPresenter(IconTextView view, StageProviderService stagesProviderService)
+        public StagesStatusPresenter(
+            IconTextView view,
+            StageProviderService stagesProviderService,
+            LocalizationService localizationService)
         {
             _view = view;
             _stagesProvider = stagesProviderService;
+            _localizationService = localizationService;
         }
 
         public void Initialize()
@@ -38,10 +44,11 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StagesStatus
 
         private void UpdateView()
         {
-            string stagesStatus = StatusPrefix + _stagesProvider.CurrentStageNumber.Value.ToString();
+            int currentStage = _stagesProvider.CurrentStageNumber.Value;
 
-            if (_stagesProvider.HasFiniteStages)
-                stagesStatus += CountSeparator + _stagesProvider.StagesCount.ToString();
+            string stagesStatus = _stagesProvider.HasFiniteStages
+                ? _localizationService.FormatTemplate(FiniteStatusTemplate, currentStage, _stagesProvider.StagesCount)
+                : _localizationService.FormatTemplate(EndlessStatusTemplate, currentStage);
 
             _view.SetText(stagesStatus);
         }

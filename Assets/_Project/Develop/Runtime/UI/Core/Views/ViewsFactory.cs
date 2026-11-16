@@ -1,4 +1,5 @@
 ﻿using Assets._Project.Develop.Runtime.Utilities.AssetsManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,6 +9,7 @@ namespace Assets._Project.Develop.Runtime.UI.Core.Views
     public class ViewsFactory
     {
         private readonly ResourcesAssetsLoader _resourcesAssetsLoader;
+        private readonly LocalizationService _localizationService;
 
         private readonly Dictionary<string, string> _viewIDToResourcesPath = new Dictionary<string, string>()
         {
@@ -35,9 +37,10 @@ namespace Assets._Project.Develop.Runtime.UI.Core.Views
             {ViewIDs.TutorialPopup, "UI/Gameplay/TutorialPopup" },
         };
 
-        public ViewsFactory(ResourcesAssetsLoader resourcesAssetsLoader)
+        public ViewsFactory(ResourcesAssetsLoader resourcesAssetsLoader, LocalizationService localizationService)
         {
             _resourcesAssetsLoader = resourcesAssetsLoader;
+            _localizationService = localizationService;
         }
 
         public TView Create<TView>(string viewID, Transform parent = null) where TView : MonoBehaviour, IView
@@ -51,6 +54,10 @@ namespace Assets._Project.Develop.Runtime.UI.Core.Views
 
             if (view == null)
                 throw new InvalidOperationException($"Not found {typeof(TView)} component on view instance");
+
+            // Тексты префаба переводятся сразу после создания, до презентера. Awake вью к этому моменту уже прошёл,
+            // поэтому вью не запоминает тексты префаба в Awake.
+            _localizationService.TranslateTexts(instance);
 
             return view;
         }

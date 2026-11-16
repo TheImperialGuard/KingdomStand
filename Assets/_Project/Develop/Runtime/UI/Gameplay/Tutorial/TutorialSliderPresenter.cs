@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Configs.Encyclopedia;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Tutorial;
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
 using Assets._Project.Develop.Runtime.UI.Core.Presenters;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
 {
@@ -17,17 +18,23 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
         private readonly TutorialSliderView _view;
         private readonly TutorialSliderInfo _info;
         private readonly HotkeysService _hotkeysService;
+        private readonly LocalizationService _localizationService;
 
         private readonly List<IDisposable> _hotkeysDisposables = new();
 
         private int _pageIndex;
         private bool _isClosed;
 
-        public TutorialSliderPresenter(TutorialSliderView view, TutorialSliderInfo info, HotkeysService hotkeysService)
+        public TutorialSliderPresenter(
+            TutorialSliderView view,
+            TutorialSliderInfo info,
+            HotkeysService hotkeysService,
+            LocalizationService localizationService)
         {
             _view = view;
             _info = info;
             _hotkeysService = hotkeysService;
+            _localizationService = localizationService;
         }
 
         private IReadOnlyList<EncyclopediaNoteConfig> Pages => _info.Pages;
@@ -70,12 +77,15 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
 
             EncyclopediaNoteConfig note = Pages[_pageIndex];
 
-            _view.SetNote(note.Picture, note.Title, note.Text);
+            _view.SetNote(
+                note.Picture,
+                _localizationService.Translate(note.Title),
+                _localizationService.Translate(note.Text));
             _view.SetDots(Pages.Count, _pageIndex);
             _view.SetBackButton(HasSeveralPages, _pageIndex > 0);
 
             if (IsLastPage)
-                _view.ShowFinishButton(_info.FinishText);
+                _view.ShowFinishButton(_localizationService.Translate(_info.FinishText));
             else
                 _view.ShowNextButton();
 

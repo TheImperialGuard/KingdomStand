@@ -15,6 +15,7 @@ using Assets._Project.Develop.Runtime.UI.Settings;
 using Assets._Project.Develop.Runtime.Utilities.Audio;
 using Assets._Project.Develop.Runtime.Utilities.ConfigsManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.SceneManagment;
 
 namespace Assets._Project.Develop.Runtime.UI.Meta
@@ -57,6 +58,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta
                 _container.Resolve<LevelsProgressionService>(),
                 _container.Resolve<EndlessRecordService>(),
                 _container.Resolve<ConfigsProviderService>(),
+                _container.Resolve<LocalizationService>(),
                 view,
                 startStep);
         }
@@ -68,7 +70,8 @@ namespace Assets._Project.Develop.Runtime.UI.Meta
                 _container.Resolve<ConfigsProviderService>().GetConfig<EndlessModeConfig>(),
                 _container.Resolve<EndlessRecordService>(),
                 _container.Resolve<SceneSwitcherService>(),
-                _container.Resolve<ICoroutinesPerformer>());
+                _container.Resolve<ICoroutinesPerformer>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public SettingsPopupPresenter CreateSettingsPopupPresenter(SettingsPopupView view)

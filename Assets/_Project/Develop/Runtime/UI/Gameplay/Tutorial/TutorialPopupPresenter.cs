@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.PauseFeature;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
 {
@@ -18,6 +19,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
         private readonly TutorialPopupView _view;
         private readonly TimeScalePauseService _timeScalePauseService;
         private readonly GameplayPresentersFactory _presentersFactory;
+        private readonly LocalizationService _localizationService;
 
         private TutorialSliderPresenter _sliderPresenter;
         private Action _sliderClosedCallback;
@@ -30,12 +32,14 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
             RayShooterService rayShooterService,
             TutorialPopupView view,
             TimeScalePauseService timeScalePauseService,
-            GameplayPresentersFactory presentersFactory)
+            GameplayPresentersFactory presentersFactory,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
             _timeScalePauseService = timeScalePauseService;
             _presentersFactory = presentersFactory;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -94,8 +98,13 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
 
         public void ShowCameraHint(TutorialCameraHintInfo info, string continueText, bool isMobile)
         {
-            _view.CameraHintView.Show(info.Text, info.MoveCaption, info.ZoomCaption, isMobile);
-            _view.ContinueHintView.Show(continueText);
+            _view.CameraHintView.Show(
+                _localizationService.Translate(info.Text),
+                _localizationService.Translate(info.MoveCaption),
+                _localizationService.Translate(info.ZoomCaption),
+                isMobile);
+
+            _view.ContinueHintView.Show(_localizationService.Translate(continueText));
         }
 
         public void HideCameraHint()
@@ -110,15 +119,15 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
         public void ShowPointer(ITutorialPointerTarget target, TutorialPointerSides side, string text, string continueText)
         {
             _view.BringToFront();
-            _view.PointerView.Show(target, side, text);
+            _view.PointerView.Show(target, side, _localizationService.Translate(text));
 
             if (string.IsNullOrEmpty(continueText))
                 _view.ContinueHintView.Hide();
             else
-                _view.ContinueHintView.Show(continueText);
+                _view.ContinueHintView.Show(_localizationService.Translate(continueText));
         }
 
-        public void SetPointerText(string text) => _view.PointerView.SetText(text);
+        public void SetPointerText(string text) => _view.PointerView.SetText(_localizationService.Translate(text));
 
         public void HidePointer()
         {

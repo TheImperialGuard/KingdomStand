@@ -1,8 +1,10 @@
 ﻿using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
+using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Enemies;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using System;
 using UnityEngine;
 
@@ -11,11 +13,15 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
     public class EnemyInfoPopupPresenter : PopupPresenterBase
     {
         private const string HealthSeparator = " / ";
+        private const string PhysicalResistanceValue = "физ.";
+        private const string MagicResistanceValue = "маг.";
+        private const string NoResistanceValue = "нет";
 
         private readonly BottomInfoPopupView _view;
         private readonly Entity _sourceEnemy;
 
         private readonly EntitiesLifeContext _entitiesLifeContext;
+        private readonly LocalizationService _localizationService;
 
         private IDisposable _currentHealthChangedDisposable;
         private IDisposable _maxHealthChangedDisposable;
@@ -25,12 +31,14 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
             RayShooterService rayShooterService,
             BottomInfoPopupView view,
             Entity sourceEnemy,
-            EntitiesLifeContext entitiesLifeContext)
+            EntitiesLifeContext entitiesLifeContext,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
             _sourceEnemy = sourceEnemy;
             _entitiesLifeContext = entitiesLifeContext;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -48,13 +56,26 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
 
         private void SetupInfo()
         {
+            DamageTypes resistanceType = _sourceEnemy.DamageResistanceType.Value;
+
             _view.SetEnemyInfo(
-                _sourceEnemy.EnemyName.Value,
-                _sourceEnemy.DamageResistanceType.Value,
+                _localizationService.Translate(_sourceEnemy.EnemyName.Value),
+                resistanceType,
+                _localizationService.Translate(GetResistanceValue(resistanceType)),
                 _sourceEnemy.HasComponent<IsBoss>(),
                 _sourceEnemy.HasComponent<IsFlying>());
 
             UpdateHealth();
+        }
+
+        private static string GetResistanceValue(DamageTypes resistanceType)
+        {
+            return resistanceType switch
+            {
+                DamageTypes.Physic => PhysicalResistanceValue,
+                DamageTypes.Magic => MagicResistanceValue,
+                _ => NoResistanceValue,
+            };
         }
 
         // Здоровье округляется вверх: живой враг с долей единицы здоровья не показывает ноль.

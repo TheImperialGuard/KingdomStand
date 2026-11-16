@@ -8,7 +8,7 @@ using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Endless;
 using Assets._Project.Develop.Runtime.Utilities.ConfigsManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
-using Assets._Project.Develop.Runtime.Utilities.Text;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 
 namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
 {
@@ -19,12 +19,14 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
         private const string LevelWordOne = "уровень";
         private const string LevelWordFew = "уровня";
         private const string LevelWordMany = "уровней";
-        private const string EndlessRecordPrefix = "Рекорд: волна ";
+        private const string CampaignSubtitleTemplate = "{0} {1}";
+        private const string EndlessRecordTemplate = "Рекорд: волна {0}";
         private const string EndlessNoRecordSubtitle = "Волны без конца";
 
         private readonly ConfigsProviderService _configProviderService;
         private readonly LevelsProgressionService _levelsProgressionService;
         private readonly EndlessRecordService _endlessRecordService;
+        private readonly LocalizationService _localizationService;
 
         private readonly MainMenuPresentersFactory _presentersFactory;
         private readonly ViewsFactory _viewsFactory;
@@ -46,6 +48,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
             LevelsProgressionService levelsProgressionService,
             EndlessRecordService endlessRecordService,
             ConfigsProviderService configProviderService,
+            LocalizationService localizationService,
             PlayBoardPopupView boardView,
             PlayBoardSteps startStep) : base(coroutinesPerformer, rayShooterService)
         {
@@ -54,6 +57,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
             _levelsProgressionService = levelsProgressionService;
             _endlessRecordService = endlessRecordService;
             _configProviderService = configProviderService;
+            _localizationService = localizationService;
             _boardView = boardView;
             _startStep = startStep;
         }
@@ -75,8 +79,8 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
             _endlessStepPresenter = _presentersFactory.CreateEndlessStepPresenter(_boardView.EndlessStep);
             _endlessStepPresenter.Initialize();
 
-            string levelWord = RussianPlural.Select(levelsCount, LevelWordOne, LevelWordFew, LevelWordMany);
-            _boardView.SetCampaignSubtitle($"{levelsCount} {levelWord}");
+            string levelWord = _localizationService.SelectPlural(levelsCount, LevelWordOne, LevelWordFew, LevelWordMany);
+            _boardView.SetCampaignSubtitle(string.Format(CampaignSubtitleTemplate, levelsCount, levelWord));
             _boardView.SetEndlessSubtitle(GetEndlessSubtitle());
 
             _focusedTileIndex = GetFocusedTileIndex(levelsCount);
@@ -181,9 +185,9 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
         private string GetEndlessSubtitle()
         {
             if (_endlessRecordService.HasRecord)
-                return EndlessRecordPrefix + _endlessRecordService.BestWave;
+                return _localizationService.FormatTemplate(EndlessRecordTemplate, _endlessRecordService.BestWave);
 
-            return EndlessNoRecordSubtitle;
+            return _localizationService.Translate(EndlessNoRecordSubtitle);
         }
 
         private void ShowStep(PlayBoardSteps step)

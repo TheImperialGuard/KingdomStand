@@ -1,4 +1,5 @@
-﻿using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
+﻿using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
+using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Level;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Towers;
@@ -7,7 +8,9 @@ using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.Utilities.CameraManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
+using Assets._Project.Develop.Runtime.Utilities.Text;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 using System;
 using System.Collections.Generic;
@@ -21,7 +24,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
     public abstract class TowerPopupPresenterBase<TButton> : PopupPresenterBase where TButton : struct, Enum
     {
         private const string SellTitle = "Продать башню?";
-        private const string SellDescription = "Вы получите золото за продажу: ";
+        private const string SellDescriptionTemplate = "Вы получите золото за продажу: {0}";
         private const string GainSign = "+";
 
         private readonly TowerPopupViewBase _view;
@@ -44,7 +47,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
             TowersPlaceholdersService towersPlaceholdersService,
             WalletService walletService,
             BoundedOrthoCamera camera,
-            UISoundPlayer uiSoundPlayer)
+            UISoundPlayer uiSoundPlayer,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
@@ -54,6 +58,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
             _walletService = walletService;
             _camera = camera;
             _uiSoundPlayer = uiSoundPlayer;
+            LocalizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -63,6 +68,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
         protected TowersPurchaseService TowersPurchaseService { get; }
 
         protected TowersPlaceholdersService TowersPlaceholdersService { get; }
+
+        protected LocalizationService LocalizationService { get; }
 
         public RectTransform RingArea => _view.RingArea;
 
@@ -162,11 +169,22 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
             return IsArmed(button) ? MedallionStates.Armed : MedallionStates.Idle;
         }
 
+        // Название переводится до неразрывного пробела: перевод держит свою цифру уровня в конце
+        protected TowerTipContent GetTowerTip(ShootingTowerConfig config)
+        {
+            string title = NonBreakingSpace.BeforeTrailingNumber(LocalizationService.Translate(config.TowerName));
+
+            return new TowerTipContent(title, LocalizationService.Translate(config.TowerDesc));
+        }
+
         protected TowerTipContent GetSellTip()
         {
             int gold = TowersPurchaseService.GetGoldAmountForSell(Source);
 
-            return new TowerTipContent(SellTitle, SellDescription + gold, bigNumber: GainSign + gold);
+            return new TowerTipContent(
+                LocalizationService.Translate(SellTitle),
+                LocalizationService.FormatTemplate(SellDescriptionTemplate, gold),
+                bigNumber: GainSign + gold);
         }
 
         protected void SellSource()

@@ -3,6 +3,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.Utilities.Audio;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using System;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
         private readonly StagesCycle _stagesCycle;
         private readonly StageProviderService _stageProviderService;
         private readonly MusicSwitcherService _musicSwitcherService;
+        private readonly LocalizationService _localizationService;
 
         private int _clicks;
 
@@ -26,13 +28,15 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
             StagesCycle stagesCycle,
             RayShooterService rayShooterService,
             StageProviderService stageProviderService,
-            MusicSwitcherService musicSwitcherService)
+            MusicSwitcherService musicSwitcherService,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
             _stagesCycle = stagesCycle;
             _stageProviderService = stageProviderService;
             _musicSwitcherService = musicSwitcherService;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -44,7 +48,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
             base.Initialize();
 
             _view.StartButtonClicked += OnStartButtonClicked;
-            _view.SetWavesEnemiesText(StageEnemiesText.Build(_stageProviderService.NextStageConfig));
+            _view.SetWavesEnemiesText(StageEnemiesText.Build(_stageProviderService.NextStageConfig, _localizationService));
 
             _clicks = 0;
         }

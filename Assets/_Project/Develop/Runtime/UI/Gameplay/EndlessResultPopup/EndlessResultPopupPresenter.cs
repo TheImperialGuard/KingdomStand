@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
 using Assets._Project.Develop.Runtime.Meta.Infrastructure;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.SceneManagment;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.EndlessResultPopup
@@ -14,8 +15,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.EndlessResultPopup
     {
         private const string TitleName = "Раунд окончен";
         private const string DecreeText = "Вы внесли своё имя в летопись";
-        private const string WavePrefix = "Волна ";
-        private const string RecordPrefix = "Рекорд: волна ";
+        private const string WaveTemplate = "Волна {0}";
+        private const string RecordTemplate = "Рекорд: волна {0}";
         private const string NewRecordText = "Новый рекорд!";
 
         private readonly EndlessResultPopupView _popupView;
@@ -23,6 +24,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.EndlessResultPopup
         private readonly ICoroutinesPerformer _coroutinesPerformer;
         private readonly GameplayInputArgs _gameplayInputArgs;
         private readonly EndlessRunResult _runResult;
+        private readonly LocalizationService _localizationService;
 
         public EndlessResultPopupPresenter(
             ICoroutinesPerformer coroutinesPerformer,
@@ -30,7 +32,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.EndlessResultPopup
             EndlessResultPopupView popupView,
             SceneSwitcherService sceneSwitcherService,
             GameplayInputArgs gameplayInputArgs,
-            EndlessRunResult runResult)
+            EndlessRunResult runResult,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _popupView = popupView;
@@ -38,6 +41,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.EndlessResultPopup
             _coroutinesPerformer = coroutinesPerformer;
             _gameplayInputArgs = gameplayInputArgs;
             _runResult = runResult;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _popupView;
@@ -46,14 +50,14 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.EndlessResultPopup
         {
             base.Initialize();
 
-            _popupView.SetTitle(TitleName);
-            _popupView.SetDecree(DecreeText);
-            _popupView.SetWave(WavePrefix + _runResult.ReachedWave);
+            _popupView.SetTitle(_localizationService.Translate(TitleName));
+            _popupView.SetDecree(_localizationService.Translate(DecreeText));
+            _popupView.SetWave(_localizationService.FormatTemplate(WaveTemplate, _runResult.ReachedWave));
 
             if (_runResult.IsNewRecord)
-                _popupView.SetNewRecord(NewRecordText);
+                _popupView.SetNewRecord(_localizationService.Translate(NewRecordText));
             else
-                _popupView.SetRecord(RecordPrefix + _runResult.BestWave);
+                _popupView.SetRecord(_localizationService.FormatTemplate(RecordTemplate, _runResult.BestWave));
 
             _popupView.MenuClicked += OnMenuClicked;
             _popupView.RestartClicked += OnRestartClicked;

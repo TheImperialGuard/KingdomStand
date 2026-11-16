@@ -8,7 +8,7 @@ using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups;
 using Assets._Project.Develop.Runtime.Utilities.CameraManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
-using Assets._Project.Develop.Runtime.Utilities.Text;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 using System;
 #if UNITY_EDITOR
@@ -42,7 +42,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BuildTowerPopup
             WalletService walletService,
             TowersPlaceholdersService towersPlaceholdersService,
             BoundedOrthoCamera camera,
-            UISoundPlayer uiSoundPlayer)
+            UISoundPlayer uiSoundPlayer,
+            LocalizationService localizationService)
             : base(
                 coroutinesPerformer,
                 rayShooterService,
@@ -52,7 +53,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BuildTowerPopup
                 towersPlaceholdersService,
                 walletService,
                 camera,
-                uiSoundPlayer)
+                uiSoundPlayer,
+                localizationService)
         {
             _view = view;
             _entitiesFactory = entitiesFactory;
@@ -93,9 +95,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BuildTowerPopup
 
         protected override TowerTipContent GetTip(TowerTypes type)
         {
-            ShootingTowerConfig config = _towersListConfig.GetBy(type, TowersFirstLevel);
-
-            return new TowerTipContent(NonBreakingSpace.BeforeTrailingNumber(config.TowerName), config.TowerDesc);
+            return GetTowerTip(_towersListConfig.GetBy(type, TowersFirstLevel));
         }
 
         protected override void OnArmed(TowerTypes type)

@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
 using Assets._Project.Develop.Runtime.Meta.Infrastructure;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.SceneManagment;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
@@ -12,14 +13,14 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
     {
         private const string TitleName = "Поражение";
         private const string DecreeText = "Оборона прорвана. Король требует реванша";
-        private const string WavePrefix = "Волна ";
-        private const string WaveSeparator = "/";
+        private const string WaveTemplate = "Волна {0}/{1}";
 
         private readonly DefeatPopupView _popupView;
         private readonly SceneSwitcherService _sceneSwitcherService;
         private readonly ICoroutinesPerformer _coroutinesPerformer;
         private readonly GameplayInputArgs _gameplayInputArgs;
         private readonly StageProviderService _stageProviderService;
+        private readonly LocalizationService _localizationService;
 
         public DefeatPopupPresenter(
             ICoroutinesPerformer coroutinesPerformer,
@@ -27,7 +28,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
             DefeatPopupView popupView,
             SceneSwitcherService sceneSwitcherService,
             GameplayInputArgs gameplayInputArgs,
-            StageProviderService stageProviderService)
+            StageProviderService stageProviderService,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _popupView = popupView;
@@ -35,6 +37,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
             _coroutinesPerformer = coroutinesPerformer;
             _gameplayInputArgs = gameplayInputArgs;
             _stageProviderService = stageProviderService;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _popupView;
@@ -43,10 +46,12 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
         {
             base.Initialize();
 
-            _popupView.SetTitle(TitleName);
-            _popupView.SetDecree(DecreeText);
-            _popupView.SetWave(
-                WavePrefix + _stageProviderService.CurrentStageNumber.Value + WaveSeparator + _stageProviderService.StagesCount);
+            _popupView.SetTitle(_localizationService.Translate(TitleName));
+            _popupView.SetDecree(_localizationService.Translate(DecreeText));
+            _popupView.SetWave(_localizationService.FormatTemplate(
+                WaveTemplate,
+                _stageProviderService.CurrentStageNumber.Value,
+                _stageProviderService.StagesCount));
 
             _popupView.ContinueClicked += OnContinueClicked;
             _popupView.RestartClicked += OnRestartClicked;

@@ -43,6 +43,7 @@ using Assets._Project.Develop.Runtime.Utilities.Audio;
 using Assets._Project.Develop.Runtime.Utilities.CameraManagment;
 using Assets._Project.Develop.Runtime.Utilities.ConfigsManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.SceneManagment;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 
@@ -69,7 +70,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<StagesCycle>(),
                 _container.Resolve<RayShooterService>(),
                 _container.Resolve<StageProviderService>(),
-                _container.Resolve<MusicSwitcherService>());
+                _container.Resolve<MusicSwitcherService>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public SkipStagePopupPresenter CreateSkipStagePopupPresenter(SkipStagePopupView view)
@@ -80,7 +82,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 view,
                 _container.Resolve<StagesCycle>(),
                 _container.Resolve<StageProviderService>(),
-                _container.Resolve<EarnGoldOnSkipStageService>());
+                _container.Resolve<EarnGoldOnSkipStageService>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public BuildTowerPopupPresenter CreateBuildTowerPopupPresenter(BuildTowerPopupView view, Entity towerPlaceholder)
@@ -100,7 +103,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<WalletService>(),
                 _container.Resolve<TowersPlaceholdersService>(),
                 _container.Resolve<BoundedOrthoCamera>(),
-                _container.Resolve<UISoundPlayer>());
+                _container.Resolve<UISoundPlayer>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public UpgradeTowerPopupPresenter CreateUpgradeTowerPopupPresenter(UpgradeTowerPopupView view, Entity sourceTower)
@@ -119,7 +123,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<WalletService>(),
                 _container.Resolve<TowersPlaceholdersService>(),
                 _container.Resolve<BoundedOrthoCamera>(),
-                _container.Resolve<UISoundPlayer>());
+                _container.Resolve<UISoundPlayer>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public TowerAbilitiesPopupPresenter CreateTowerAbilitiesPopupPresenter(TowerAbilitiesPopupView view, Entity sourceTower)
@@ -138,7 +143,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<TowersPlaceholdersService>(),
                 _container.Resolve<AbilitiesFactory>(),
                 _container.Resolve<BoundedOrthoCamera>(),
-                _container.Resolve<UISoundPlayer>());
+                _container.Resolve<UISoundPlayer>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public GameplayScreenPresenter CreateGameplayScreenPresenter(GameplayScreenView view)
@@ -150,7 +156,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<IAdvertsService>(),
                 _container.Resolve<ConfigsProviderService>().GetConfig<GameConfig>(),
                 _container.Resolve<WalletService>(),
-                _container.Resolve<StagesCycle>());
+                _container.Resolve<StagesCycle>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public GoldWalletPresenter CreateGoldWalletPresenter(IconTextView view)
@@ -187,7 +194,10 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
 
         public StagesStatusPresenter CreateStagesStatusPresenter(IconTextView view)
         {
-            return new StagesStatusPresenter(view, _container.Resolve<StageProviderService>());
+            return new StagesStatusPresenter(
+                view,
+                _container.Resolve<StageProviderService>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public TowerInfoPopupPresenter CreateTowerInfoPopupPresenter(BottomInfoPopupView view, Entity sourceTower)
@@ -197,7 +207,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<RayShooterService>(),
                 view,
                 sourceTower,
-                _container.Resolve<EntitiesLifeContext>());
+                _container.Resolve<EntitiesLifeContext>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public EnemyInfoPopupPresenter CreateEnemyInfoPopupPresenter(BottomInfoPopupView view, Entity sourceEnemy)
@@ -207,7 +218,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<RayShooterService>(),
                 view,
                 sourceEnemy,
-                _container.Resolve<EntitiesLifeContext>());
+                _container.Resolve<EntitiesLifeContext>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public EnemiesHealthBarsPresenter CreateEnemiesHealthBarsPresenter()
@@ -232,7 +244,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 view,
                 _container.Resolve<SceneSwitcherService>(),
                 results,
-                _container.Resolve<PlayerHealth>());
+                _container.Resolve<PlayerHealth>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public DefeatPopupPresenter CreateDefeatPopupPresenter(DefeatPopupView view)
@@ -243,7 +256,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 view,
                 _container.Resolve<SceneSwitcherService>(),
                 _gameplayInputArgs,
-                _container.Resolve<StageProviderService>());
+                _container.Resolve<StageProviderService>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public EndlessResultPopupPresenter CreateEndlessResultPopupPresenter(EndlessResultPopupView view, EndlessRunResult runResult)
@@ -254,7 +268,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 view,
                 _container.Resolve<SceneSwitcherService>(),
                 _gameplayInputArgs,
-                runResult);
+                runResult,
+                _container.Resolve<LocalizationService>());
         }
 
         public PausePopupPresenter CreatePausePopupPresenter(PausePopupView view)
@@ -279,12 +294,17 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<RayShooterService>(),
                 view,
                 _container.Resolve<TimeScalePauseService>(),
-                this);
+                this,
+                _container.Resolve<LocalizationService>());
         }
 
         public TutorialSliderPresenter CreateTutorialSliderPresenter(TutorialSliderView view, TutorialSliderInfo info)
         {
-            return new TutorialSliderPresenter(view, info, _container.Resolve<HotkeysService>());
+            return new TutorialSliderPresenter(
+                view,
+                info,
+                _container.Resolve<HotkeysService>(),
+                _container.Resolve<LocalizationService>());
         }
 
         public AudioSettingsPresenter CreateAudioSettingsPresenter(AudioSettingsView view)

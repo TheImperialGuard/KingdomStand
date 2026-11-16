@@ -8,12 +8,15 @@ using Assets._Project.Develop.Runtime.UI.Gameplay.GoldWallet;
 using Assets._Project.Develop.Runtime.UI.Gameplay.PlayerHealthDisplay;
 using Assets._Project.Develop.Runtime.UI.Gameplay.StagesStatus;
 using Assets._Project.Develop.Runtime.Utilities.Adverts;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay
 {
     public class GameplayScreenPresenter : IPresenter
     {
+        private const string AdvertRewardTipTemplate = "<b>+{0}</b>  монет за просмотр рекламы!";
+
         private readonly GameplayScreenView _screenView;
 
         private readonly GameplayPresentersFactory _gameplayPresentersFactory;
@@ -22,6 +25,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
         private readonly GameConfig _gameConfig;
         private readonly WalletService _goldWallet;
         private readonly StagesCycle _stagesCycle;
+        private readonly LocalizationService _localizationService;
 
         private readonly List<IPresenter> _childPresenters = new();
 
@@ -32,7 +36,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             IAdvertsService advertsService,
             GameConfig gameConfig,
             WalletService goldWallet,
-            StagesCycle stagesCycle)
+            StagesCycle stagesCycle,
+            LocalizationService localizationService)
         {
             _screenView = screenView;
             _gameplayPresentersFactory = gameplayPresentersFactory;
@@ -41,13 +46,15 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             _gameConfig = gameConfig;
             _goldWallet = goldWallet;
             _stagesCycle = stagesCycle;
+            _localizationService = localizationService;
         }
 
         public GameplayScreenView Screen => _screenView;
 
         public void Initialize()
         {
-            _screenView.SetAdvertRewardTipText(_gameConfig.GoldRewardByAdvert.ToString());
+            _screenView.SetAdvertRewardTipText(
+                _localizationService.FormatTemplate(AdvertRewardTipTemplate, _gameConfig.GoldRewardByAdvert));
 
             if (_advertsService.IsAvailable == false)
                 HideAdvertObjects();

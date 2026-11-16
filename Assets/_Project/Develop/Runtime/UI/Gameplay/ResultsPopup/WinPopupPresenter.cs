@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 using Assets._Project.Develop.Runtime.Meta.Infrastructure;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.SceneManagment;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
@@ -19,6 +20,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
         private readonly ICoroutinesPerformer _coroutinesPerformer;
         private readonly LevelResults _levelResults;
         private readonly PlayerHealth _playerHealth;
+        private readonly LocalizationService _localizationService;
 
         public WinPopupPresenter(
             ICoroutinesPerformer coroutinesPerformer,
@@ -26,7 +28,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
             WinPopupView popupView,
             SceneSwitcherService sceneSwitcherService,
             LevelResults levelResults,
-            PlayerHealth playerHealth)
+            PlayerHealth playerHealth,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _popupView = popupView;
@@ -34,6 +37,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
             _coroutinesPerformer = coroutinesPerformer;
             _levelResults = levelResults;
             _playerHealth = playerHealth;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _popupView;
@@ -42,8 +46,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup
         {
             base.Initialize();
 
-            _popupView.SetTitle(TitleName);
-            _popupView.SetDecree(DecreeText);
+            _popupView.SetTitle(_localizationService.Translate(TitleName));
+            _popupView.SetDecree(_localizationService.Translate(DecreeText));
             _popupView.SetResults(_levelResults);
             _popupView.SetLives(_playerHealth.Current.Value + LivesSeparator + _playerHealth.Max.Value);
 

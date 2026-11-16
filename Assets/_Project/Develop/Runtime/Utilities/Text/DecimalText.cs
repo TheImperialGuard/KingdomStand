@@ -2,14 +2,17 @@
 
 namespace Assets._Project.Develop.Runtime.Utilities.Text
 {
-    // Число для текста по-русски: дробная часть через запятую, не больше двух знаков, без лишних нулей — 2, 1,5, 0,75.
+    // Число для текста: не больше двух знаков после разделителя, без лишних нулей — 2, 1,5, 0,75 (или 1.5, 0.75).
+    // Разделитель задаёт язык текста, поэтому его передают снаружи.
     public static class DecimalText
     {
         private const string TwoDecimalsFormat = "0.##";
-        private const string DecimalSeparator = ",";
 
-        private static readonly NumberFormatInfo _format = new() { NumberDecimalSeparator = DecimalSeparator };
+        public static string Format(float value, string decimalSeparator)
+        {
+            NumberFormatInfo format = new() { NumberDecimalSeparator = decimalSeparator };
 
-        public static string Format(float value) => value.ToString(TwoDecimalsFormat, _format);
+            return value.ToString(TwoDecimalsFormat, format);
+        }
     }
 }

@@ -90,6 +90,12 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
             _campaignStep.SetActive(step == PlayBoardSteps.Campaign);
             _endlessStep.gameObject.SetActive(step == PlayBoardSteps.Endless);
 
+            if (step == PlayBoardSteps.Modes)
+            {
+                _campaignCard.FitTitleHeight();
+                _endlessCard.FitTitleHeight();
+            }
+
             LayoutRebuilder.ForceRebuildLayoutImmediate(Board);
         }
 

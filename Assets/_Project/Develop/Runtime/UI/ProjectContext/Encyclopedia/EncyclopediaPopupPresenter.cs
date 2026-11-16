@@ -12,6 +12,7 @@ using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Core.Views;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.Text;
 using UnityEngine;
 
@@ -38,6 +39,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
         private readonly ViewsFactory _viewsFactory;
         private readonly ScriptableObject _startRecord;
         private readonly UISoundPlayer _uiSoundPlayer;
+        private readonly LocalizationService _localizationService;
 
         private readonly List<IDisposable> _hotkeysDisposables = new();
 
@@ -56,7 +58,8 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             HotkeysService hotkeysService,
             ViewsFactory viewsFactory,
             ScriptableObject startRecord,
-            UISoundPlayer uiSoundPlayer)
+            UISoundPlayer uiSoundPlayer,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
@@ -69,6 +72,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             _viewsFactory = viewsFactory;
             _startRecord = startRecord;
             _uiSoundPlayer = uiSoundPlayer;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -169,7 +173,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 
             int leftPageNumber = _spread * PagesPerSpread + 1;
 
-            _view.SetSection(section);
+            _view.SetSection(section, _localizationService.Translate(_view.GetPlaceholderCaption(section)));
             _view.SetPageNumbers(leftPageNumber, leftPageNumber + 1);
             _view.SetArrows(_spread > 0, _spread < GetLastSpread(section));
 
@@ -199,21 +203,23 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 
         private void ShowNote(EncyclopediaNoteConfig note)
         {
-            ShowLeftPage(note.Picture, note.Title, string.Empty);
-            _view.NotePage.SetText(note.Text);
+            ShowLeftPage(note.Picture, _localizationService.Translate(note.Title), string.Empty);
+            _view.NotePage.SetText(_localizationService.Translate(note.Text));
         }
 
         private void ShowTower(ShootingTowerConfig tower)
         {
-            ShowLeftPage(tower.Picture, NonBreakingSpace.BeforeTrailingNumber(tower.TowerName), tower.TowerDesc);
+            string towerName = NonBreakingSpace.BeforeTrailingNumber(_localizationService.Translate(tower.TowerName));
+
+            ShowLeftPage(tower.Picture, towerName, _localizationService.Translate(tower.TowerDesc));
 
             EncyclopediaStats damageStat = tower.DamageType == DamageTypes.Magic
                 ? EncyclopediaStats.MagicDamage
                 : EncyclopediaStats.PhysicalDamage;
 
-            AddStatTile(damageStat, DecimalText.Format(tower.AttackDamage));
-            AddStatTile(EncyclopediaStats.AttacksPerSecond, DecimalText.Format(tower.AttackPerSecond));
-            AddStatTile(EncyclopediaStats.AttackRange, DecimalText.Format(tower.AttackRange));
+            AddStatTile(damageStat, _localizationService.FormatDecimal(tower.AttackDamage));
+            AddStatTile(EncyclopediaStats.AttacksPerSecond, _localizationService.FormatDecimal(tower.AttackPerSecond));
+            AddStatTile(EncyclopediaStats.AttackRange, _localizationService.FormatDecimal(tower.AttackRange));
 
             bool hasAbilities = _contents.IsTopLevel(tower);
             _view.EntityPage.SetAbilitiesVisible(hasAbilities);
@@ -228,7 +234,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 
         private void ShowEnemy(MeleeConfig enemy)
         {
-            ShowLeftPage(enemy.Picture, enemy.CharacterName, string.Empty);
+            ShowLeftPage(enemy.Picture, _localizationService.Translate(enemy.CharacterName), string.Empty);
 
             if (enemy.IsBoss)
                 AddTrait(_encyclopediaConfig.BossTrait, FormatBossTraitDescription(enemy));
@@ -241,7 +247,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 
             _view.LeftPage.SetTraitsVisible(_view.LeftPage.TraitsList.Elements.Count > 0);
 
-            AddStatTile(EncyclopediaStats.Health, DecimalText.Format(enemy.MaxHealth));
+            AddStatTile(EncyclopediaStats.Health, _localizationService.FormatDecimal(enemy.MaxHealth));
             AddResistanceTile(EncyclopediaStats.PhysicalResistance, enemy, DamageTypes.Physic);
             AddResistanceTile(EncyclopediaStats.MagicResistance, enemy, DamageTypes.Magic);
             AddStatTile(EncyclopediaStats.GoldOnDeath, enemy.GoldOnDeath.ToString());
@@ -265,18 +271,19 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
         // Предел удара у каждого босса свой (Рагнар — 1/4, вожак — 1/10, йети — 1/25): число берётся из конфига.
         private string FormatBossTraitDescription(MeleeConfig boss)
         {
-            string maxHealthShare = BossHealthSharePrefix + DecimalText.Format(boss.BossMaxHealthDividerPerHit);
+            string maxHealthShare = BossHealthSharePrefix + _localizationService.FormatDecimal(boss.BossMaxHealthDividerPerHit);
 
-            return string.Format(_encyclopediaConfig.BossTrait.Description, maxHealthShare);
+            return string.Format(_localizationService.Translate(_encyclopediaConfig.BossTrait.Description), maxHealthShare);
         }
 
-        private void AddTrait(EncyclopediaTraitInfo traitInfo) => AddTrait(traitInfo, traitInfo.Description);
+        private void AddTrait(EncyclopediaTraitInfo traitInfo)
+            => AddTrait(traitInfo, _localizationService.Translate(traitInfo.Description));
 
         private void AddTrait(EncyclopediaTraitInfo traitInfo, string description)
         {
             EncyclopediaTraitView trait = _viewsFactory.Create<EncyclopediaTraitView>(ViewIDs.EncyclopediaTrait);
             _view.LeftPage.TraitsList.AddElement(trait);
-            trait.Set(traitInfo.Icon, traitInfo.Name, description);
+            trait.Set(traitInfo.Icon, _localizationService.Translate(traitInfo.Name), description);
         }
 
         // Защита от типа урона, которой у врага нет, показывается нулевой и приглушённой.
@@ -301,25 +308,33 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             EncyclopediaStatTileView tile = _viewsFactory.Create<EncyclopediaStatTileView>(ViewIDs.EncyclopediaStatTile);
 
             _view.EntityPage.StatTilesList.AddElement(tile);
-            tile.Set(statInfo.Icon, value, statInfo.Caption, isMuted);
+            tile.Set(statInfo.Icon, value, _localizationService.Translate(statInfo.Caption), isMuted);
         }
 
         private void AddTowerAbility(AbilityConfig ability)
         {
             string description = ability.DescriptionByLevel.Count > 0 ? ability.DescriptionByLevel[0] : string.Empty;
 
-            AddAbility(ability.Icon, ability.Name, description, EncyclopediaAbilityNumbers.Format(ability));
+            AddAbility(ability.Icon, ability.Name, description, EncyclopediaAbilityNumbers.Format(ability, _localizationService));
         }
 
         private void AddEnemyAbility(EnemyAbilityConfig ability)
-            => AddAbility(ability.Icon, ability.Name, ability.Description, EncyclopediaAbilityNumbers.Format(ability));
+        {
+            string numbers = EncyclopediaAbilityNumbers.Format(ability, _localizationService);
+
+            AddAbility(ability.Icon, ability.Name, ability.Description, numbers);
+        }
 
         private void AddAbility(Sprite icon, string abilityName, string description, string numbers)
         {
             EncyclopediaAbilityView ability = _viewsFactory.Create<EncyclopediaAbilityView>(ViewIDs.EncyclopediaAbility);
 
             _view.EntityPage.AddAbility(ability);
-            ability.Set(icon, abilityName, description, numbers);
+            ability.Set(
+                icon,
+                _localizationService.Translate(abilityName),
+                _localizationService.Translate(description),
+                numbers);
         }
 
         private void ClearPages()

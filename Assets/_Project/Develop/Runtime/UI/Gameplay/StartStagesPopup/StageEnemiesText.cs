@@ -1,5 +1,6 @@
 ﻿using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Stages;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,7 +15,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
         private const string EntryEnd = "</nobr>";
         private const string EntrySeparator = ",</nobr> ";
 
-        public static string Build(StageConfig config)
+        public static string Build(StageConfig config, LocalizationService localizationService)
         {
             if (config is EnemiesWavesStageConfig enemiesWavesStageConfig == false)
                 throw new ArgumentException($"{typeof(StageConfig)}");
@@ -25,7 +26,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
             {
                 foreach (WaveEnemyGroup enemyGroup in wave.EnemyGroups)
                 {
-                    string characterName = enemyGroup.EnemyConfig.CharacterName;
+                    string characterName = localizationService.Translate(enemyGroup.EnemyConfig.CharacterName);
                     int count = enemyGroup.Count * wave.PatternRepeats;
 
                     if (allEnemiesInWaves.ContainsKey(characterName))

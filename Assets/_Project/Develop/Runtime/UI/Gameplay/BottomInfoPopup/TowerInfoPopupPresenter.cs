@@ -1,7 +1,9 @@
 ﻿using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
+using Assets._Project.Develop.Runtime.Gameplay.Features.ApplyDamage;
 using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.Text;
 using System;
 using UnityEngine;
@@ -10,10 +12,14 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
 {
     public class TowerInfoPopupPresenter : PopupPresenterBase
     {
+        private const string PhysicalDamageCaption = "физ. урон";
+        private const string MagicDamageCaption = "маг. урон";
+
         private readonly BottomInfoPopupView _view;
         private readonly Entity _sourceTower;
 
         private readonly EntitiesLifeContext _entitiesLifeContext;
+        private readonly LocalizationService _localizationService;
 
         private IDisposable _damageChangedDisposable;
         private IDisposable _frozenDisposable;
@@ -23,12 +29,14 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
             RayShooterService rayShooterService,
             BottomInfoPopupView view,
             Entity sourceTower,
-            EntitiesLifeContext entitiesLifeContext)
+            EntitiesLifeContext entitiesLifeContext,
+            LocalizationService localizationService)
             : base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
             _sourceTower = sourceTower;
             _entitiesLifeContext = entitiesLifeContext;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -46,16 +54,21 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.BottomInfoPopup
 
         private void SetupInfo()
         {
+            DamageTypes damageType = _sourceTower.InstantAttackDamageType.Value;
+            string damageCaption = damageType == DamageTypes.Magic ? MagicDamageCaption : PhysicalDamageCaption;
+
             _view.SetTowerInfo(
-                NonBreakingSpace.BeforeTrailingNumber(_sourceTower.TowerName.Value),
-                _sourceTower.InstantAttackDamageType.Value,
-                DecimalText.Format(_sourceTower.AttacksPerSecond.Value),
-                DecimalText.Format(_sourceTower.InstantShootRange.Value));
+                NonBreakingSpace.BeforeTrailingNumber(_localizationService.Translate(_sourceTower.TowerName.Value)),
+                damageType,
+                _localizationService.Translate(damageCaption),
+                _localizationService.FormatDecimal(_sourceTower.AttacksPerSecond.Value),
+                _localizationService.FormatDecimal(_sourceTower.InstantShootRange.Value));
 
             UpdateDamage();
         }
 
-        private void UpdateDamage() => _view.SetTowerDamage(DecimalText.Format(_sourceTower.InstantAttackDamage.Value));
+        private void UpdateDamage()
+            => _view.SetTowerDamage(_localizationService.FormatDecimal(_sourceTower.InstantAttackDamage.Value));
 
         private void OnDamageChanged(float arg1, float damage) => UpdateDamage();
 

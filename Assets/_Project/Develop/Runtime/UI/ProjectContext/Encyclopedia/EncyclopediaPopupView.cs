@@ -109,7 +109,8 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             FitIntoSafeArea();
         }
 
-        public void SetSection(EncyclopediaSections section)
+        // Подпись заглушки картинки приходит готовой: русскую вью отдаёт GetPlaceholderCaption, перевод — у презентера
+        public void SetSection(EncyclopediaSections section, string placeholderCaption)
         {
             foreach (EncyclopediaBookmarkView bookmark in _bookmarks)
                 bookmark.SetSelected(bookmark.Section == section);
@@ -117,13 +118,15 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             EncyclopediaSectionStyle style = GetStyle(section);
             bool isTutorial = section == EncyclopediaSections.Tutorial;
 
-            _leftPage.SetPlaceholder(style.PlaceholderIcon, style.PlaceholderCaption);
+            _leftPage.SetPlaceholder(style.PlaceholderIcon, placeholderCaption);
             _entityPage.SetAccentColors(style.AccentColor, style.AccentDarkColor);
             _notePage.SetAccentColor(style.AccentColor);
 
             _entityPage.gameObject.SetActive(isTutorial == false);
             _notePage.gameObject.SetActive(isTutorial);
         }
+
+        public string GetPlaceholderCaption(EncyclopediaSections section) => GetStyle(section).PlaceholderCaption;
 
         public void SetPageNumbers(int leftPageNumber, int rightPageNumber)
         {

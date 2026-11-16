@@ -30,10 +30,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
 
         [SerializeField] private List<RectTransform> _tips;
 
-        public void SetAdvertRewardTipText(string goldAmount)
-        {
-            _advertRewardTipText.text = $"<b>+{goldAmount}</b>  монет за просмотр рекламы!";
-        }
+        public void SetAdvertRewardTipText(string text) => _advertRewardTipText.text = text;
 
         public void HideTips()
         {

@@ -50,7 +50,6 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
         private void Awake()
         {
             _area = (RectTransform)transform;
-            _nextText = _nextLabel.text;
 
             _dotTemplate.gameObject.SetActive(false);
 
@@ -116,6 +115,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
 
         public void ShowNextButton()
         {
+            RememberNextText();
+
             _nextLabel.text = _nextText;
             _nextTriangle.SetActive(true);
         }
@@ -123,6 +124,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
         // Последняя страница: вместо «Далее ▶» — завершение без треугольника
         public void ShowFinishButton(string text)
         {
+            RememberNextText();
+
             _nextLabel.text = text;
             _nextTriangle.SetActive(false);
         }
@@ -146,6 +149,14 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial
             float scale = Mathf.Min(1f, (_area.rect.height - ColumnVerticalMargins) / columnHeight);
 
             _column.localScale = new Vector3(scale, scale, 1f);
+        }
+
+        // Текст «Далее» берётся из префаба при первом показе кнопки, а не в Awake: ViewsFactory переводит тексты окна
+        // уже после Awake
+        private void RememberNextText()
+        {
+            if (_nextText == null)
+                _nextText = _nextLabel.text;
         }
 
         private void FitTextButtons()

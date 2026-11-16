@@ -4,6 +4,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Features.Raycast;
 using Assets._Project.Develop.Runtime.UI.Core.Popups;
 using Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
 using System;
 using UnityEngine;
@@ -19,6 +20,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup
         private readonly StagesCycle _stagesCycle;
         private readonly StageProviderService _stageProviderService;
         private readonly EarnGoldOnSkipStageService _earnGoldOnSkipStageService;
+        private readonly LocalizationService _localizationService;
 
         private int _clicks;
         private int _earnedGold;
@@ -34,13 +36,15 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup
             SkipStagePopupView view,
             StagesCycle stagesCycle,
             StageProviderService stageProviderService,
-            EarnGoldOnSkipStageService earnGoldOnSkipStageService) :
+            EarnGoldOnSkipStageService earnGoldOnSkipStageService,
+            LocalizationService localizationService) :
             base(coroutinesPerformer, rayShooterService)
         {
             _view = view;
             _stagesCycle = stagesCycle;
             _stageProviderService = stageProviderService;
             _earnGoldOnSkipStageService = earnGoldOnSkipStageService;
+            _localizationService = localizationService;
         }
 
         protected override PopupViewBase PopupView => _view;
@@ -54,7 +58,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup
             _view.StartButtonClicked += OnStartButtonClicked;
 
             _canBeSkipedDisposable = _stagesCycle.StageCanBeSkiped.Subscribe(OnStageCanBeSkipedChange);
-            _view.SetWavesEnemiesText(StageEnemiesText.Build(_stageProviderService.NextStageConfig));
+            _view.SetWavesEnemiesText(StageEnemiesText.Build(_stageProviderService.NextStageConfig, _localizationService));
 
             IReadOnlyVariable<float> remainingTime = _stageProviderService.CurrentStageRemainingTime;
 

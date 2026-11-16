@@ -7,7 +7,7 @@ using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups;
 using Assets._Project.Develop.Runtime.Utilities.CameraManagment;
 using Assets._Project.Develop.Runtime.Utilities.CoroutinesManagment;
-using Assets._Project.Develop.Runtime.Utilities.Text;
+using Assets._Project.Develop.Runtime.Utilities.Localization;
 using Assets._Project.Develop.Runtime.Utilities.Wallet;
 using System;
 using UnityEngine;
@@ -40,7 +40,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
             WalletService walletService,
             TowersPlaceholdersService towersPlaceholdersService,
             BoundedOrthoCamera camera,
-            UISoundPlayer uiSoundPlayer)
+            UISoundPlayer uiSoundPlayer,
+            LocalizationService localizationService)
             : base(
                 coroutinesPerformer,
                 rayShooterService,
@@ -50,7 +51,8 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
                 towersPlaceholdersService,
                 walletService,
                 camera,
-                uiSoundPlayer)
+                uiSoundPlayer,
+                localizationService)
         {
             _view = view;
             _towersFactory = towersFactory;
@@ -117,9 +119,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
             switch (button)
             {
                 case UpgradeTowerPopupButtons.Upgrade:
-                    return new TowerTipContent(
-                        NonBreakingSpace.BeforeTrailingNumber(NextLevelConfig.TowerName),
-                        NextLevelConfig.TowerDesc);
+                    return GetTowerTip(NextLevelConfig);
 
                 case UpgradeTowerPopupButtons.Sell:
                     return GetSellTip();
