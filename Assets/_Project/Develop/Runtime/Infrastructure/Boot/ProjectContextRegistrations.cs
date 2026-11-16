@@ -7,6 +7,7 @@ using Assets._Project.Develop.Runtime.Infrastructure.DI;
 using Assets._Project.Develop.Runtime.Meta.Features.Endless;
 using Assets._Project.Develop.Runtime.Meta.Features.Levels;
 using Assets._Project.Develop.Runtime.Meta.Features.Settings;
+using Assets._Project.Develop.Runtime.Meta.Features.Tutorial;
 using Assets._Project.Develop.Runtime.UI.Core.Hotkeys;
 using Assets._Project.Develop.Runtime.UI.Core.Sounds;
 using Assets._Project.Develop.Runtime.UI.Core.Views;
@@ -64,6 +65,8 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
             container.RegisterAsSingle(CreateLevelsProgressionService).NonLazy();
 
             container.RegisterAsSingle(CreateEndlessRecordService).NonLazy();
+
+            container.RegisterAsSingle(CreateTutorialProgressService).NonLazy();
 
             container.RegisterAsSingle(CreateMusicSwitcherService);
 
@@ -180,6 +183,11 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
         private static EndlessRecordService CreateEndlessRecordService(DIContainer c)
         {
             return new EndlessRecordService(c.Resolve<PlayerDataProvider>());
+        }
+
+        private static TutorialProgressService CreateTutorialProgressService(DIContainer c)
+        {
+            return new TutorialProgressService(c.Resolve<PlayerDataProvider>());
         }
 
         private static MusicSwitcherService CreateMusicSwitcherService(DIContainer c)

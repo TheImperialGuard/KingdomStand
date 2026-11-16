@@ -6,6 +6,7 @@ using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Projectiles;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Levels.Endless;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Tutorial;
 using Assets._Project.Develop.Runtime.Utilities.AssetsManagment;
 using System;
 using System.Collections;
@@ -32,6 +33,7 @@ namespace Assets._Project.Develop.Runtime.Utilities.ConfigsManagment
             {typeof(RoutesPreviewConfig), "Configs/Gameplay/RoutesPreviewConfig" },
             {typeof(EncyclopediaConfig), "Configs/Encyclopedia/EncyclopediaConfig" },
             {typeof(EnemyHintsConfig), "Configs/Gameplay/EnemyHintsConfig" },
+            {typeof(TutorialConfig), "Configs/Gameplay/TutorialConfig" },
         };
 
         public ResourcesConfigsLoader(ResourcesAssetsLoader resources)

@@ -9,6 +9,7 @@ namespace Assets._Project.Develop.Runtime.Utilities.DataManagment
         public Dictionary<int, LevelResults> CompletedLevels;
         public AudioSettingsData AudioSettings;
         public int EndlessBestWave;
+        public List<string> ShownTutorials;
         //Upgrades info
     }
 }
