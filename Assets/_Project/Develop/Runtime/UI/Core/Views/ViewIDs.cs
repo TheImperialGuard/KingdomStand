@@ -23,5 +23,6 @@
         public const string EncyclopediaAbility = nameof(EncyclopediaAbility);
         public const string EnemyHealthBar = nameof(EnemyHealthBar);
         public const string EnemyHint = nameof(EnemyHint);
+        public const string TutorialPopup = nameof(TutorialPopup);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Assets._Project.Develop.Runtime.Configs.Gameplay;
 using Assets._Project.Develop.Runtime.Configs.Gameplay.Entities.Towers;
+using Assets._Project.Develop.Runtime.Configs.Gameplay.Tutorial;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore;
 using Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.EntitiesFactory;
 using Assets._Project.Develop.Runtime.Gameplay.Features.AbilitiesFeature.Abilities;
@@ -34,6 +35,7 @@ using Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.StagesStatus;
 using Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup;
+using Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial;
 using Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup;
 using Assets._Project.Develop.Runtime.UI.Settings;
 using Assets._Project.Develop.Runtime.Utilities.Adverts;
@@ -268,6 +270,21 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
                 _container.Resolve<HotkeysService>(),
                 _container.Resolve<GameplayCycle>(),
                 _container.Resolve<UISoundPlayer>());
+        }
+
+        public TutorialPopupPresenter CreateTutorialPopupPresenter(TutorialPopupView view)
+        {
+            return new TutorialPopupPresenter(
+                _coroutinesPerformer,
+                _container.Resolve<RayShooterService>(),
+                view,
+                _container.Resolve<TimeScalePauseService>(),
+                this);
+        }
+
+        public TutorialSliderPresenter CreateTutorialSliderPresenter(TutorialSliderView view, TutorialSliderInfo info)
+        {
+            return new TutorialSliderPresenter(view, info, _container.Resolve<HotkeysService>());
         }
 
         public AudioSettingsPresenter CreateAudioSettingsPresenter(AudioSettingsView view)

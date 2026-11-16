@@ -12,6 +12,7 @@ using Assets._Project.Develop.Runtime.UI.Gameplay.ResultsPopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.SkipStagePopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup;
 using Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup;
+using Assets._Project.Develop.Runtime.UI.Gameplay.Tutorial;
 using Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup;
 using Assets._Project.Develop.Runtime.UI.ProjectContext;
 using Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia;
@@ -172,6 +173,17 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
             PausePopupView view = ViewsFactory.Create<PausePopupView>(ViewIDs.PausePopup, PopupLayer);
 
             PausePopupPresenter presenter = _gameplayPresentersFactory.CreatePausePopupPresenter(view);
+
+            OnPopupCreated(presenter, view, closedCallback);
+
+            return presenter;
+        }
+
+        public TutorialPopupPresenter OpenTutorialPopup(Action closedCallback = null)
+        {
+            TutorialPopupView view = ViewsFactory.Create<TutorialPopupView>(ViewIDs.TutorialPopup, PopupLayer);
+
+            TutorialPopupPresenter presenter = _gameplayPresentersFactory.CreateTutorialPopupPresenter(view);
 
             OnPopupCreated(presenter, view, closedCallback);
 
