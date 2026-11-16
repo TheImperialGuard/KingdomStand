@@ -13,7 +13,9 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial.Steps
 {
     // Указатель на построенную башню — без принуждения: щелчок по затемнению закрывает его. Башня только что построена,
     // поэтому пауза встаёт не сразу, а когда башня доиграет появление. Щелчок по башне в вырезе открывает её окно как
-    // обычно; тогда затемнение гаснет, пауза снимается, и шаг ждёт, пока окно башни закроют.
+    // обычно; тогда затемнение гаснет, пауза снимается, и шаг ждёт, пока окно башни закроют. Щелчок по затемнению до
+    // конца появления сразу убирает указатель, а паузу и следующий шаг откладывает до конца появления: иначе башня
+    // застыла бы посреди анимации.
     public class TutorialTowerPointerStep : ITutorialStep
     {
         private readonly TutorialPointersInfo _info;
@@ -25,6 +27,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial.Steps
         private Action _completed;
         private Coroutine _pauseDelay;
         private bool _isWaitingForTowerPopup;
+        private bool _isFinishing;
 
         public TutorialTowerPointerStep(
             TutorialPointersInfo info,
@@ -47,6 +50,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial.Steps
             _popup = popup;
             _completed = completed;
             _isWaitingForTowerPopup = false;
+            _isFinishing = false;
 
             _popup.DimmerClicked += OnDimmerClicked;
             _popupService.TowerPopupOpened += OnTowerPopupOpened;
@@ -77,17 +81,26 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial.Steps
 
         private IEnumerator PauseAfterTowerAppeared()
         {
-            yield return new WaitForSecondsRealtime(_info.TowerPauseDelay);
+            // Игровое время, а не реальное: пружина появления идёт по нему же. Долгие первые кадры после постройки
+            // (Time.maximumDeltaTime) двигают его медленнее реального, и реальная задержка кончалась посреди пружины.
+            yield return new WaitForSeconds(_info.TowerPauseDelay);
 
             _pauseDelay = null;
             _popup.SetPaused(true);
+
+            if (_isFinishing)
+                _completed?.Invoke();
         }
 
-        private void OnDimmerClicked() => Finish();
+        private void OnDimmerClicked()
+        {
+            if (_isFinishing == false)
+                Finish();
+        }
 
         private void OnTowerPopupOpened(PopupPresenterBase towerPopup, Entity source)
         {
-            if (_isWaitingForTowerPopup)
+            if (_isWaitingForTowerPopup || _isFinishing)
                 return;
 
             _isWaitingForTowerPopup = true;
@@ -111,14 +124,17 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Features.Tutorial.Steps
             _completed?.Invoke();
         }
 
-        // Следующий указатель снова держит бой на паузе, даже если башня ещё не доиграла появление
+        // Следующий указатель снова держит бой на паузе. Пока башня доигрывает появление, пауза и следующий шаг ждут
+        // конца задержки — их выставит PauseAfterTowerAppeared.
         private void Finish()
         {
-            StopPauseDelay();
-
+            _isFinishing = true;
             _popup.HidePointer();
-            _popup.SetPaused(true);
 
+            if (_pauseDelay != null)
+                return;
+
+            _popup.SetPaused(true);
             _completed?.Invoke();
         }
 
