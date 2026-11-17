@@ -13,10 +13,9 @@ namespace Assets._Project.Develop.Editor.Build
     // Веб-сборка с двумя файлами данных: текстуры DXT для ПК и ETC2 для телефонов. Код у обеих сборок общий, отличается
     // только файл данных, поэтому файл ETC2 кладётся рядом с файлом DXT, а index.html выбирает нужный по поддержке
     // форматов видеокартой. Обработка после сборки идёт раньше PluginYG2: тот дорабатывает index.html, нумерует сборку
-    // и упаковывает архив уже с обоими файлами.
+    // и упаковывает архив уже с обоими файлами. Запускается командами площадок — StoreBuild.
     public class WebDualTextureBuild : IPostprocessBuildWithReport
     {
-        private const string MenuPath = "Tools/Build/Web DXT + ETC2";
         private const string DialogTitle = "Веб-сборка DXT + ETC2";
         private const string Etc2FolderSuffix = "_etc2";
         private const string BuildFolderName = "Build";
@@ -45,7 +44,7 @@ namespace Assets._Project.Develop.Editor.Build
 
         public int callbackOrder => BeforePluginYG2CallbackOrder;
 
-        public static void Build(string outputPath)
+        public static bool Build(string outputPath)
         {
             string etc2Path = outputPath + Etc2FolderSuffix;
             string[] scenes = GetEnabledScenes();
@@ -64,7 +63,7 @@ namespace Assets._Project.Develop.Editor.Build
                 if (etc2Report.summary.result != BuildResult.Succeeded)
                 {
                     Debug.LogError($"[{DialogTitle}] Сборка ETC2 не удалась: {etc2Report.summary.result}. Сборка DXT не запускалась.");
-                    return;
+                    return false;
                 }
 
                 _pendingEtc2DataPath = FindDataFile(etc2Path);
@@ -74,10 +73,11 @@ namespace Assets._Project.Develop.Editor.Build
                 if (dxtReport.summary.result != BuildResult.Succeeded)
                 {
                     Debug.LogError($"[{DialogTitle}] Сборка DXT не удалась: {dxtReport.summary.result}.");
-                    return;
+                    return false;
                 }
 
                 Debug.Log($"[{DialogTitle}] Готово: {outputPath}");
+                return true;
             }
             finally
             {
@@ -100,31 +100,6 @@ namespace Assets._Project.Develop.Editor.Build
 
             File.Copy(_pendingEtc2DataPath, Path.Combine(outputPath, BuildFolderName, etc2DataName), true);
             PatchIndex(Path.Combine(outputPath, IndexFileName), dxtDataName, etc2DataName);
-        }
-
-        [MenuItem(MenuPath)]
-        private static void BuildFromMenu()
-        {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL)
-            {
-                EditorUtility.DisplayDialog(DialogTitle, "Активная платформа — не Web. Переключите её в Build Profiles.", "OK");
-                return;
-            }
-
-            string outputPath = EditorUserBuildSettings.GetBuildLocation(BuildTarget.WebGL);
-
-            if (string.IsNullOrEmpty(outputPath))
-            {
-                EditorUtility.DisplayDialog(DialogTitle, "Папка веб-сборки не задана. Задайте её обычной сборкой в Build Profiles.", "OK");
-                return;
-            }
-
-            string message = $"Две сборки подряд — ETC2, затем DXT — в папку:\n{outputPath}\n\nЭто займёт несколько десятков минут.";
-
-            if (EditorUtility.DisplayDialog(DialogTitle, message, "Собрать", "Отмена") == false)
-                return;
-
-            Build(outputPath);
         }
 
         private static string[] GetEnabledScenes()
