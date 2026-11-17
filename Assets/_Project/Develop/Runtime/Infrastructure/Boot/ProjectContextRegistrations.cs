@@ -35,6 +35,7 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
 {
     public class ProjectContextRegistrations
     {
+        private const string BrowserStorageKeysPrefix = "KingdomStand.";
         private const string EditorSavesFolderName = "Saves";
         private const string TranslationTablePath = "Localization/English";
 
@@ -164,6 +165,8 @@ namespace Assets._Project.Develop.Runtime.Infrastructure.EntryPoint
 
             #if UNITY_WEBGL && YandexGamesPlatform_yg
                 dataRepository = new YGCloudDataRepository();
+            #elif UNITY_WEBGL && !UNITY_EDITOR
+                dataRepository = new BrowserStorageDataRepository(BrowserStorageKeysPrefix);
             #else
                 string saveFolderPath = Application.isEditor
                     ? Path.Combine(Path.GetDirectoryName(Application.dataPath), EditorSavesFolderName)
