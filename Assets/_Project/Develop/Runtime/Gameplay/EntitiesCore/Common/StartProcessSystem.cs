@@ -2,11 +2,10 @@
 using Assets._Project.Develop.Runtime.Utilities.Conditions;
 using Assets._Project.Develop.Runtime.Utilities.Reactive;
 using System;
-using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Common
 {
-    public abstract class StartProcessSystem : IInitializableSystem, IDisposable
+    public abstract class StartProcessSystem : IInitializableSystem, IDisposableSystem
     {
         protected ReactiveEvent StartProcessRequest;
         protected ReactiveEvent StartProcessEvent;
@@ -19,7 +18,7 @@ namespace Assets._Project.Develop.Runtime.Gameplay.EntitiesCore.Common
 
         public abstract void OnInit(Entity entity);
 
-        public void Dispose()
+        public void OnDispose()
         {
             StartProcessRequestDisposable.Dispose();
         }
