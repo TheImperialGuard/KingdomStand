@@ -26,8 +26,6 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
 {
     public class GameplayBootstrap : SceneBootstrap
     {
-        private const string EndlessLevelName = "бесконечный";
-
         private DIContainer _container;
         private GameplayInputArgs _inputArgs;
 
@@ -73,12 +71,6 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
 
         public override IEnumerator Initialize()
         {
-            string levelName = _inputArgs.IsEndless ? EndlessLevelName : _inputArgs.LevelNumber.ToString();
-
-            Debug.Log($"Выполнен переход на уровень {levelName}");
-
-            Debug.Log("Инициализация геймплейной сцены");
-
             _entitiesLifeContext = _container.Resolve<EntitiesLifeContext>();
             _brainsContext = _container.Resolve<AIBrainsContext>();
             _rayShooterService = _container.Resolve<RayShooterService>();
@@ -109,8 +101,6 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
 
         public override void Run()
         {
-            Debug.Log("Старт геймплейной сцены");
-
             // Как при выходе в меню из боя. На время рекламы плагин площадки сам ставит игру на паузу, частоту показа
             // ограничивает тоже он
             if (_inputArgs.IsRestart)
@@ -163,14 +153,6 @@ namespace Assets._Project.Develop.Runtime.Gameplay.Infrastructure
                 // Время кадра без масштаба: замер идёт и на паузе, и на ускорении
                 _performanceProbeService?.Update(Time.unscaledDeltaTime);
             #endif
-
-            //if (Input.GetKeyDown(KeyCode.M))
-            //{
-            //    SceneSwitcherService sceneSwitcherService = _container.Resolve<SceneSwitcherService>();
-            //    ICoroutinesPerformer coroutinesPerformer = _container.Resolve<ICoroutinesPerformer>();
-
-            //    coroutinesPerformer.StartPerform(sceneSwitcherService.ProcessSwitchTo(Scenes.MainMenu, new MainMenuInputArgs()));
-            //}
         }
     }
 }
