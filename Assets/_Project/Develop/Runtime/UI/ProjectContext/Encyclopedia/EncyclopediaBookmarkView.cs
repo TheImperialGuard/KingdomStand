@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 {
     // Закладка раздела, торчащая из-под переплёта: при наведении выдвигается дальше, выбранная — ещё дальше и ярче
-    // (spec-encyclopedia.md → «Закладки», Р-71). Не Selectable: навигации и залипшего выделения нет (Р-25).
+    // (spec-encyclopedia.md → «Закладки»). Не Selectable: навигации и залипшего выделения нет.
     public class EncyclopediaBookmarkView : MonoBehaviour,
         IPointerEnterHandler,
         IPointerExitHandler,

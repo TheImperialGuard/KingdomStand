@@ -23,7 +23,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
 {
-    // Способности башни IV уровня и продажа. После покупки уровня способности окно остаётся открытым (Р-37): заряд
+    // Способности башни IV уровня и продажа. После покупки уровня способности окно остаётся открытым: заряд
     // снимается, кнопки показывают новый уровень.
     public class TowerAbilitiesPopupPresenter : TowerPopupPresenterBase<TowerAbilitiesPopupButtons>
     {

@@ -18,7 +18,7 @@ using Assets._Project.Develop.Runtime.Gameplay.Infrastructure;
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.UpgradeTowerPopup
 {
     // Улучшение башни I–III уровня и продажа. Заряд улучшения показывает на круге дальности башни прирост до дальности
-    // следующего уровня (Р-19).
+    // следующего уровня.
     public class UpgradeTowerPopupPresenter : TowerPopupPresenterBase<UpgradeTowerPopupButtons>
     {
         // Нажатие на кнопку улучшения — любое, в том числе заряжающее; нужно указателю обучения

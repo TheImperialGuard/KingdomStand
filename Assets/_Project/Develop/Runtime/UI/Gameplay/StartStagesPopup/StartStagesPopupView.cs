@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.StartStagesPopup
 {
-    // Кнопка волны: медальон с подсказкой под ним. На телефоне медальон крупнее (_xl, Р-07), подсказка опускается вслед
+    // Кнопка волны: медальон с подсказкой под ним. На телефоне медальон крупнее (_xl), подсказка опускается вслед
     // за его низом. Появление — twpop макета, пульсация (если есть) включается после него.
     public class StartStagesPopupView : PopupViewBase
     {

@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 {
     // Стрелка листания внизу страницы: при наведении увеличивается, на крайнем развороте бледная и не нажимается
-    // (spec-encyclopedia.md → «Листание»). Не Selectable (Р-25).
+    // (spec-encyclopedia.md → «Листание»). Не Selectable.
     public class EncyclopediaArrowView : MonoBehaviour,
         IPointerEnterHandler,
         IPointerExitHandler,

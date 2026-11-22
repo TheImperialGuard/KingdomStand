@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace Assets._Project.Develop.Runtime.UI.Functional
 {
     // На телефоне делает интерфейс крупнее: уменьшает эталон у CanvasScaler в режиме Expand. Ширина эталона — самое узкое
-    // окно, в котором раскладка помещается целиком: шире масштаб идёт по высоте, уже — по ширине (Р-78). Числа эталона и
+    // окно, в котором раскладка помещается целиком: шире масштаб идёт по высоте, уже — по ширине. Числа эталона и
     // признак телефона — MenuCanvasScale: по ним же пауза боя считает масштаб меню.
     [RequireComponent(typeof(CanvasScaler))]
     public class PhoneScaleSwitcher : MonoBehaviour

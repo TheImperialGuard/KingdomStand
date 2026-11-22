@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace Assets._Project.Develop.Runtime.UI.Settings
 {
-    // Ряд одного канала звука в окне настроек меню (Р-61): выключенный ряд — перечёркнутая иконка и бледный ползунок.
+    // Ряд одного канала звука в окне настроек меню: выключенный ряд — перечёркнутая иконка и бледный ползунок.
     public class AudioChannelView : MonoBehaviour
     {
         private const float OffSliderAlpha = 0.45f;

@@ -20,7 +20,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerPopups
 {
     // Окно башни или места под неё. Кнопка срабатывает со второго нажатия: первое заряжает её и открывает подсказку,
     // нажатие на другую кнопку переносит заряд, недоступная кнопка нажатий не принимает. Щелчок мимо закрывает окно,
-    // щелчок по своей башне ничего не делает (Р-38).
+    // щелчок по своей башне ничего не делает.
     public abstract class TowerPopupPresenterBase<TButton> : PopupPresenterBase where TButton : struct, Enum
     {
         private const string SellTitle = "Продать башню?";

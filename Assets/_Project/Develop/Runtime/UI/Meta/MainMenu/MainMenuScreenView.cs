@@ -71,7 +71,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
                 item.SetCollapsed(isCollapsed);
         }
 
-        // Контейнер закреплён по центру: укороченный до низа «Настроек», он ставит три оставшиеся строки по центру (Р-81).
+        // Контейнер закреплён по центру: укороченный до низа «Настроек», он ставит три оставшиеся строки по центру.
         public void HideExitItem()
         {
             _exitItem.gameObject.SetActive(false);

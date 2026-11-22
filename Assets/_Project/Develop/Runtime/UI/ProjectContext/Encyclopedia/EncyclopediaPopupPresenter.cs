@@ -19,8 +19,8 @@ using UnityEngine;
 namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 {
     // Энциклопедия: по записи на разворот, закладки меняют раздел и возвращают на первый разворот, стрелки и клавиши ← →
-    // листают. Без записи для открытия книга открывается на последнем разделе (Р-22), открытие по записи тоже запоминает
-    // её раздел (Р-69). Esc и щелчок по затемнению закрывают книгу только отдельно от меню — в меню Esc ловит меню (Р-66).
+    // листают. Без записи для открытия книга открывается на последнем разделе, открытие по записи тоже запоминает
+    // её раздел. Esc и щелчок по затемнению закрывают книгу только отдельно от меню — в меню Esc ловит меню.
     public class EncyclopediaPopupPresenter : PopupPresenterBase
     {
         private const int PagesPerSpread = 2;
@@ -113,7 +113,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             _hotkeysDisposables.Clear();
         }
 
-        // Место и масштаб книги в меню считает раскладка меню (Р-66).
+        // Место и масштаб книги в меню считает раскладка меню.
         public void SetMenuLayout(float scale, float rightMargin) => _view.SetLayout(scale, rightMargin);
 
         private EncyclopediaPage GetStartPage()

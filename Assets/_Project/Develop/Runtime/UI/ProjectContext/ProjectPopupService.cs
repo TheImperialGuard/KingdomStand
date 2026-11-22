@@ -22,11 +22,11 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext
 
         protected abstract EncyclopediaModes EncyclopediaMode { get; }
 
-        // Книга на последнем открытом разделе (Р-22).
+        // Книга на последнем открытом разделе.
         public EncyclopediaPopupPresenter OpenEncyclopediaPopup(Action closedCallback = null)
             => OpenEncyclopediaPopupAt(null, closedCallback);
 
-        // Книга на развороте записи (Р-14); если записи в книге нет — на первом развороте её раздела.
+        // Книга на развороте записи; если записи в книге нет — на первом развороте её раздела.
         public EncyclopediaPopupPresenter OpenEncyclopediaPopup(CharacterConfig enemy, Action closedCallback = null)
             => OpenEncyclopediaPopupAt(enemy, closedCallback);
 

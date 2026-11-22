@@ -9,8 +9,8 @@ using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
 {
-    // Левое меню и правые панели: открыта одна панель за раз (Р-11). Переход к цели — закрыть открытую панель и по окончании
-    // открыть цель; щелчок во время перехода меняет цель (Р-24).
+    // Левое меню и правые панели: открыта одна панель за раз. Переход к цели — закрыть открытую панель и по окончании
+    // открыть цель; щелчок во время перехода меняет цель.
     public class MainMenuScreenPresenter : IPresenter
     {
         private readonly MainMenuScreenView _view;
@@ -49,7 +49,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
             _closeRequestedDisposable = _hotkeysService.CloseRequested.Subscribe(OnCloseRequested);
 
 #if UNITY_WEBGL && !UNITY_EDITOR
-            // Из браузерной вкладки игра не выходит (Р-06).
+            // Из браузерной вкладки игра не выходит.
             _view.HideExitItem();
 #endif
 
@@ -67,7 +67,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
             _closeRequestedDisposable.Dispose();
         }
 
-        // Щелчок по «Играть» открывает доску на режимах, возврат из боя — сразу на уровнях (Р-23), а после бесконечного
+        // Щелчок по «Играть» открывает доску на режимах, возврат из боя — сразу на уровнях, а после бесконечного
         // забега — на режимах.
         public void OpenPlayBoard(PlayBoardSteps startStep)
         {
@@ -105,7 +105,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
         private void ToggleTarget(MainMenuPanels panel)
             => SetTarget(_targetPanel == panel ? MainMenuPanels.None : panel);
 
-        // Выбранный пункт переходит к цели сразу, не дожидаясь закрытия открытой панели (Р-51).
+        // Выбранный пункт переходит к цели сразу, не дожидаясь закрытия открытой панели.
         private void SetTarget(MainMenuPanels panel)
         {
             _targetPanel = panel;
@@ -167,7 +167,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
         }
 
         // Меню сворачивается с началом открытия панели и разворачивается, когда панель закрылась и следующая не
-        // открывается (Р-51): раскладка считается по открытой панели, а не по цели.
+        // открывается: раскладка считается по открытой панели, а не по цели.
         private void UpdateLayout()
         {
             MainMenuLayout layout = MainMenuLayout.Calculate(_view.AreaSize, _view.ScreenHeight, _openedPanel);
@@ -176,7 +176,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
             if (_openedPopup is IMainMenuPanel panel)
                 panel.ApplyLayout(layout);
 
-            // Книга общая для сцен и про меню не знает: масштаб и поле ей передаются её методом (Р-66).
+            // Книга общая для сцен и про меню не знает: масштаб и поле ей передаются её методом.
             if (_openedPopup is EncyclopediaPopupPresenter encyclopedia)
                 encyclopedia.SetMenuLayout(layout.PanelScale, layout.PanelRightMargin);
         }

@@ -14,7 +14,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.TowerAbilitiesPopup
         [SerializeField] private TowerMedallionView _secondAbilityButton;
         [SerializeField] private MedallionButtonView _sellButton;
 
-        // Запечённые состояния значков способностей (Р-39): набор ищется по значку из конфига.
+        // Запечённые состояния значков способностей: набор ищется по значку из конфига.
         [SerializeField] private List<MedallionIcons> _abilitiesIcons;
 
         public void SetAbilityButton(TowerAbilitiesPopupButtons button, MedallionStates state, int cost)

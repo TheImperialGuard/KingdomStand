@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 {
     // Левая страница любого раздела: картинка в золотой рамке, заголовок, под ним признаки врага или описание башни.
-    // Пока картинки у записи нет, в рамке заглушка — штриховка, значок раздела и подпись (Р-18).
+    // Пока картинки у записи нет, в рамке заглушка — штриховка, значок раздела и подпись.
     public class EncyclopediaLeftPageView : MonoBehaviour
     {
         [SerializeField] private Image _picture;

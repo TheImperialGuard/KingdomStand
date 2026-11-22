@@ -64,7 +64,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
         public EncyclopediaPage FindPage(CharacterConfig enemy)
             => FindPage(EncyclopediaSections.Enemies, Enemies, enemy as MeleeConfig);
 
-        // Записи нет в книге — первый разворот её раздела (Р-14).
+        // Записи нет в книге — первый разворот её раздела.
         private EncyclopediaPage FindPage<TRecord>(
             EncyclopediaSections section,
             IReadOnlyList<TRecord> records,

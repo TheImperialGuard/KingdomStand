@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
 {
     // Строка левого меню: иконка и подпись на тёмной полосе. Наведение и выбор подсвечивают строку, у выбранной на конце
-    // покачивается маркер. Не Selectable: навигации и залипшего выделения нет (Р-25).
+    // покачивается маркер. Не Selectable: навигации и залипшего выделения нет.
     public class MainMenuItemView : MonoBehaviour,
         IPointerEnterHandler,
         IPointerExitHandler,
@@ -153,7 +153,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu
 
             _edges.SetActive(isHighlighted);
 
-            // Цвет в uGUI не осветляет выше 1: светлеют только неполные каналы (Р-50).
+            // Цвет в uGUI не осветляет выше 1: светлеют только неполные каналы.
             Color labelColor = _isHovered ? _labelIdleColor * _labelHoveredBrightness : _labelIdleColor;
             labelColor.a = _labelIdleColor.a;
             _label.color = labelColor;

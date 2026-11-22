@@ -10,7 +10,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
 {
     // Книга энциклопедии (spec-encyclopedia.md): разворот с закладками разделов, номерами страниц и стрелками, обложка
     // переворачивается при появлении. Место и масштаб задаёт вызывающий: в меню — расчёт раскладки меню, отдельно —
-    // сама книга по центру safe area над затемнением (Р-66). Числа анимаций — в секундах и px макета.
+    // сама книга по центру safe area над затемнением. Числа анимаций — в секундах и px макета.
     public class EncyclopediaPopupView : PopupViewBase
     {
         private const float MockupToReference = 1.5f;
@@ -167,7 +167,7 @@ namespace Assets._Project.Develop.Runtime.UI.ProjectContext.Encyclopedia
             }
         }
 
-        // Общее скрытие попапов мгновенное: книга сама гаснет и опускается (Р-24).
+        // Общее скрытие попапов мгновенное: книга сама гаснет и опускается.
         protected override void ModifyHideAnimation(Sequence animation)
         {
             base.ModifyHideAnimation(animation);

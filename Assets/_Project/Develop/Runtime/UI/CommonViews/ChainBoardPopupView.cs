@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Assets._Project.Develop.Runtime.UI.CommonViews
 {
-    // Доска на цепях (Р-59): панель, которая падает сверху и уезжает вверх при закрытии. Ширину, верх и правый отступ
+    // Доска на цепях: панель, которая падает сверху и уезжает вверх при закрытии. Ширину, верх и правый отступ
     // задаёт расчёт раскладки сцены, содержимое доски — дело наследника. Числа — в px макета.
     public abstract class ChainBoardPopupView : PopupViewBase
     {
@@ -28,7 +28,7 @@ namespace Assets._Project.Develop.Runtime.UI.CommonViews
 
         protected RectTransform Board => _board;
 
-        // Уезжает ли доска вверх при закрытии; без подъёма окно исчезает сразу (пауза боя, Р-15).
+        // Уезжает ли доска вверх при закрытии; без подъёма окно исчезает сразу (пауза боя).
         protected virtual bool RaisesOnHide => true;
 
         public void SetLayout(float panelWidth, float panelTop, float panelRightMargin)
@@ -68,7 +68,7 @@ namespace Assets._Project.Develop.Runtime.UI.CommonViews
                     .SetEase(Ease.OutQuad));
         }
 
-        // Общее скрытие попапов мгновенное: доска сама уезжает вверх (Р-24).
+        // Общее скрытие попапов мгновенное: доска сама уезжает вверх.
         protected override void ModifyHideAnimation(Sequence animation)
         {
             base.ModifyHideAnimation(animation);

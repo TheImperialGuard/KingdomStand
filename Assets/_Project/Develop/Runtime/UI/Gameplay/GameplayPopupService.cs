@@ -64,7 +64,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay
         protected override void OnEncyclopediaClosed() => _timeScalePauseService.Unpause();
 
         // Открыто ли окно башни (постройки, улучшения или способностей) этой башни или места: повторное нажатие на них
-        // ничего не делает (Р-38). Окно считается закрытым с момента запроса закрытия.
+        // ничего не делает. Окно считается закрытым с момента запроса закрытия.
         public bool IsTowerPopupOpenFor(Entity source) => _towerPopup != null && _towerPopupSource == source;
 
         public StartStagesPopupPresenter OpenStartStagesPopup(Action closedCallback = null)

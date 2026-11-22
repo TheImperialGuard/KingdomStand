@@ -2,7 +2,7 @@
 
 namespace Assets._Project.Develop.Runtime.UI.Functional
 {
-    // Масштаб канваса меню (Р-78 меню): CanvasScaler в режиме Expand, на телефоне эталон меньше, и интерфейс крупнее.
+    // Масштаб канваса меню: CanvasScaler в режиме Expand, на телефоне эталон меньше, и интерфейс крупнее.
     // Телефон — логическая высота игровой области ниже порога: в браузере в CSS-точках, в редакторе в пикселях окна Game.
     public static class MenuCanvasScale
     {

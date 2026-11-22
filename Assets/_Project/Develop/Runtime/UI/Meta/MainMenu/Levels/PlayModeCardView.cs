@@ -9,7 +9,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
 {
     // Карточка-знамя режима игры. При наведении — тёмная подложка с серебряной рамкой, знамя приподнимается и качается,
     // заголовок крупнее; при нажатии знамя опускается на место. Приглушение соседней карточки — у вью доски. Не Selectable:
-    // навигации и залипшего выделения нет (Р-25).
+    // навигации и залипшего выделения нет.
     public class PlayModeCardView : MonoBehaviour,
         IPointerEnterHandler,
         IPointerExitHandler,

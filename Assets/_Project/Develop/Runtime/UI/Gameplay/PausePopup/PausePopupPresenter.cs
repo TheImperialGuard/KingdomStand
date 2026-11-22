@@ -86,7 +86,7 @@ namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
 
             _audioSettingsPresenter.Subscribe();
 
-            // Esc закрывает паузу на компьютере, как «Продолжить» (Р-15).
+            // Esc закрывает паузу на компьютере, как «Продолжить».
             _closeRequestedDisposable = _hotkeysService.CloseRequested.Subscribe(OnContinueClicked);
         }
 

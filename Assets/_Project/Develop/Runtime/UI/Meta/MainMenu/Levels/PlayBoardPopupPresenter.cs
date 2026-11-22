@@ -12,7 +12,7 @@ using Assets._Project.Develop.Runtime.Utilities.Localization;
 
 namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
 {
-    // Доска «Играть»: шаг «Режим игры», шаг «Кампания» со всеми уровнями и постоянной плиткой «В разработке» (Р-07) и шаг
+    // Доска «Играть»: шаг «Режим игры», шаг «Кампания» со всеми уровнями и постоянной плиткой «В разработке» и шаг
     // «Бесконечный режим» со своим дочерним презентером. Карточка бесконечного режима подписана рекордом.
     public class PlayBoardPopupPresenter : PopupPresenterBase, IMainMenuPanel
     {
@@ -168,7 +168,7 @@ namespace Assets._Project.Develop.Runtime.UI.Meta.MainMenu.Levels
             _viewsFactory.Release(tile);
         }
 
-        // К ряду текущего уровня, а если пройдено всё — к последнему ряду, где «В разработке» (Р-56).
+        // К ряду текущего уровня, а если пройдено всё — к последнему ряду, где «В разработке».
         private int GetFocusedTileIndex(int levelsCount)
         {
             for (int i = 0; i < levelsCount; i++)

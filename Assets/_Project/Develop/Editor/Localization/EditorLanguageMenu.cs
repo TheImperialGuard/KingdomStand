@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Assets._Project.Develop.Editor.Localization
 {
-    // Язык игры в редакторе (Р-05): пункты меню пишут Simulation.language настроек PluginYG2, откуда язык берёт
+    // Язык игры в редакторе: пункты меню пишут Simulation.language настроек PluginYG2, откуда язык берёт
     // YGLanguageSource. Язык читается один раз при старте игры, поэтому в Play Mode пункты недоступны.
     public static class EditorLanguageMenu
     {

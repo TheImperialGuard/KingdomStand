@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace Assets._Project.Develop.Runtime.UI.Gameplay.PausePopup
 {
-    // Пауза боя — доска на цепях в масштабе меню по центру safe area (spec-pause.md, Р-06, Р-15): падает при открытии,
+    // Пауза боя — доска на цепях в масштабе меню по центру safe area (spec-pause.md): падает при открытии,
     // закрывается сразу. Раскладку окно считает само: перед показом и при смене размера экрана.
     public class PausePopupView : ChainBoardPopupView
     {
